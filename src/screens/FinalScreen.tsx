@@ -1,12 +1,15 @@
 import { useGame } from "../store/useGame";
 import { REGION_BY_ID } from "../data/regions";
+import { CONFIG } from "../data/config";
 import { tableRows } from "../engine/leaderboard";
+import { InspectOverlay } from "../components/panels/InspectOverlay";
 
 export function FinalScreen() {
   const table = useGame((s) => s.table)!;
   const leaderboard = useGame((s) => s.leaderboard);
   const dispatch = useGame((s) => s.dispatch);
   const leave = useGame((s) => s.leave);
+  const setInspect = useGame((s) => s.setInspect);
   const playerId = useGame((s) => s.playerId);
   const isHost = table.hostId === playerId || useGame.getState().transport === "local";
 
@@ -18,7 +21,7 @@ export function FinalScreen() {
   return (
     <div className="final">
       <div className="final-grain halftone" aria-hidden />
-      <h1 className="final-title">Round 5.<br />Scores lock.</h1>
+      <h1 className="final-title">Round {CONFIG.totalRounds}.<br />Scores lock.</h1>
 
       {globalWinner && (
         <div className="final-crown card offset c-yellow">
@@ -31,13 +34,30 @@ export function FinalScreen() {
       <h2 className="final-sub">Table {table.code} podium</h2>
       <div className="podium">
         {podium.map((r, i) => (
-          <div key={r.playerId} className={`podium-col card c-${r.color} place-${i + 1}`}>
+          <button
+            key={r.playerId}
+            className={`podium-col card c-${r.color} place-${i + 1}`}
+            onClick={() => setInspect(r.playerId)}
+            title={`See ${r.name}'s stack`}
+          >
             <div className="podium-rank display">{i + 1}</div>
             <div className="podium-flag">{r.flag}</div>
             <div className="podium-name">{r.name}</div>
             <div className="tiny muted">{REGION_BY_ID[r.regionId]?.name}</div>
             <div className="podium-score tnum display">{r.score}</div>
-          </div>
+            <div className="tiny muted podium-peek">tap to see their stack →</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="final-roster">
+        {local.map((r) => (
+          <button key={r.playerId} className={`final-roster-row c-${r.color}`} onClick={() => setInspect(r.playerId)}>
+            <span className="np-dot spot-bg" />
+            <span className="grow">{r.flag} {r.name} <span className="tiny muted">· {REGION_BY_ID[r.regionId]?.name}</span></span>
+            <span className="tnum">{r.score}</span>
+            <span className="tiny muted">view →</span>
+          </button>
         ))}
       </div>
 
@@ -49,6 +69,7 @@ export function FinalScreen() {
         You don't win by being richest or smartest. You win by building something you actually own,
         that real people use, with partners you can count on.
       </p>
+      <InspectOverlay />
     </div>
   );
 }

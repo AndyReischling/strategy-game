@@ -8,7 +8,7 @@
 export const CONFIG = {
   startingBudget: 100, // $100B, equal for everyone
   perRoundStipend: 0, // optional small income; default off
-  totalRounds: 5,
+  totalRounds: 10,
   maxPlayersPerTable: 6,
   switchingCostPenalty: 3, // changing a locked pick costs $3B
 

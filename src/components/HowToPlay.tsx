@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useGame } from "../store/useGame";
+import { CONFIG } from "../data/config";
 import { Term } from "./Term";
 import {
   Hammer, Handshake, Power, ArrowRight, ArrowLeft, X, Check,
@@ -63,7 +64,7 @@ export function HowToPlay() {
               <ArrowRight size={20} className="loop-arrow" />
               <div className="loop-step"><span className="loop-ico"><Power size={26} /></span><b>Watch</b><span className="tiny">the dice test your shortcuts</span></div>
             </div>
-            <p className="tiny muted">Each round you take <b>one action</b>: buy a piece of infrastructure, pitch a VC for capital (two sentences — and a no <i>burns your turn</i>), or strike a deal with another player. (Accepting an offer someone sends you is always free.) Then the round ends, an event hits, and round 2 begins — your stack and coalition come together over five rounds.</p>
+            <p className="tiny muted">Each round you take <b>one action</b>: buy a piece of infrastructure, pitch a VC for capital (two sentences — and a no <i>burns your turn</i>), or strike a deal with another player. (Accepting an offer someone sends you is always free.) Then the round ends, an event hits, and round 2 begins — your stack and coalition come together over {CONFIG.totalRounds} rounds. Plenty of moves to build all five layers <i>and</i> cut deals — build the layers in any order you like.</p>
           </div>
         )}
 
@@ -98,7 +99,7 @@ export function HowToPlay() {
           <div className="howto-page">
             <div className="howto-kicker mono upper tiny">How to play · 3 of {pages}</div>
             <h2 className="howto-title">How you win</h2>
-            <p className="howto-lead">At the end of five rounds, your AI is scored on four things:</p>
+            <p className="howto-lead">At the end of {CONFIG.totalRounds} rounds, your AI is scored on four things:</p>
             <ul className="howto-win">
               <li><Sparkle size={18} className="win-ico" /><span><b>Users</b> — how many people use your AI <span className="muted">(the big one)</span>.</span></li>
               <li><Check size={18} className="win-ico" /><span><b>Does it fit together?</b> — a bonus if your five choices make sense as a set.</span></li>

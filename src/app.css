@@ -193,6 +193,11 @@ input[type="number"] { font-family: var(--font-mono); }
 .score-notes li.good { color: #1c6e3e; }
 .score-notes li.bad { color: var(--orange); }
 .score-lesson { margin-top: 0.8rem; line-height: 1.4; }
+.score-how { margin: 0.6rem 0; border: 2px solid var(--ink); border-radius: var(--radius); background: var(--cream); }
+.score-how summary { cursor: pointer; font-weight: 800; font-size: 0.82rem; padding: 0.5rem 0.6rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.score-how-body { padding: 0 0.7rem 0.7rem; line-height: 1.45; }
+.score-how-body ul { margin: 0.4rem 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.score-how-body p { margin: 0.4rem 0; }
 
 /* ── Trade ──────────────────────────────────────────────── */
 .trade-grid { display: grid; grid-template-columns: minmax(260px, 360px) 1fr; gap: 1rem; }
@@ -304,12 +309,19 @@ input[type="number"] { font-family: var(--font-mono); }
 .crown-name { font-size: 2.2rem; }
 .final-sub { color: var(--cream); margin-top: 1rem; }
 .podium { display: flex; gap: 1rem; align-items: flex-end; margin-top: 1rem; flex-wrap: wrap; justify-content: center; }
-.podium-col { padding: 0.9rem; text-align: center; width: 150px; color: var(--ink); }
+.podium-col { padding: 0.9rem; text-align: center; width: 150px; color: var(--ink); cursor: pointer; }
 .podium-col.place-1 { transform: translateY(-18px); }
+.podium-col:hover { transform: translateY(-4px); }
+.podium-col.place-1:hover { transform: translateY(-22px); }
 .podium-rank { font-size: 2rem; }
 .podium-flag { font-size: 2.4rem; }
 .podium-name { font-weight: 800; }
 .podium-score { font-size: 2rem; }
+.podium-peek { margin-top: 0.4rem; opacity: 0.7; }
+.final-roster { display: flex; flex-direction: column; gap: 0.4rem; width: min(520px, 100%); margin: 1.4rem auto 0; }
+.final-roster-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem; border: 2px solid var(--ink); border-radius: var(--radius); background: var(--cream); color: var(--ink); font-weight: 700; cursor: pointer; box-shadow: var(--shadow-soft); }
+.final-roster-row:hover { background: #fff; }
+.final-roster-row .tnum { font-size: 1.1rem; }
 .final-lesson { color: var(--cream); max-width: 520px; text-align: center; margin-top: 1.4rem; line-height: 1.5; }
 
 /* ── Toast ──────────────────────────────────────────────── */

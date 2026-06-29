@@ -3,9 +3,11 @@
 // sync (state broadcasts to both) and that scores land on the leaderboard.
 import { WebSocket } from "ws";
 import type { TableState, LeaderboardRow } from "../src/data/types";
+import { CONFIG } from "../src/data/config";
 
 const URL = process.env.WS ?? "ws://localhost:8787";
 const CODE = "SMOKE-1";
+const TOTAL_ROUNDS = CONFIG.totalRounds;
 
 function client(name: string) {
   const ws = new WebSocket(URL);
@@ -69,16 +71,18 @@ async function main() {
     ["hosting", "h-foreign-cloud"],
   ];
 
-  // play 5 rounds — each round opens directly on the single action phase, so
-  // every player takes ONE action (build), then the host ends the round with a
-  // single advancePhase that resolves the off-switch + scoring + next round.
-  for (let r = 1; r <= 5; r++) {
-    const [aLayer, aOpt] = aBuilds[r - 1];
-    a.send({ t: "action", code: CODE, action: { type: "setPick", playerId: pa, layer: aLayer, optionId: aOpt } as never });
-    const [bLayer, bOpt] = bBuilds[r - 1];
-    b.send({ t: "action", code: CODE, action: { type: "setPick", playerId: pb, layer: bLayer, optionId: bOpt } as never });
-    await sleep(80);
-
+  // play every round — each round opens directly on the single action phase, so
+  // a player takes ONE action (build a layer in the first five rounds), then the
+  // host ends the round with a single advancePhase that resolves off-switch +
+  // scoring + next round. Extra rounds simply advance (stacks already full).
+  for (let r = 1; r <= TOTAL_ROUNDS; r++) {
+    if (aBuilds[r - 1]) {
+      const [aLayer, aOpt] = aBuilds[r - 1];
+      a.send({ t: "action", code: CODE, action: { type: "setPick", playerId: pa, layer: aLayer, optionId: aOpt } as never });
+      const [bLayer, bOpt] = bBuilds[r - 1];
+      b.send({ t: "action", code: CODE, action: { type: "setPick", playerId: pb, layer: bLayer, optionId: bOpt } as never });
+      await sleep(80);
+    }
     a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // ends round: off-switch + score + next round/final
     await sleep(80);
   }

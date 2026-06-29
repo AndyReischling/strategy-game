@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useGame } from "../store/useGame";
+import { CONFIG } from "../data/config";
 import { Term } from "../components/Term";
 import { Question } from "../components/icons";
 
@@ -71,7 +72,7 @@ export function Landing() {
 
         <section className="card landing-card offset c-blue">
           <h2>Practice solo</h2>
-          <p className="tiny muted">Learn the loop against bots — no server needed. Add up to five AI rivals and run all five rounds.</p>
+          <p className="tiny muted">Learn the loop against bots — no server needed. Add up to five AI rivals and run all {CONFIG.totalRounds} rounds.</p>
           <label className="field">
             <span>Your name</span>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Amara" maxLength={20} />
