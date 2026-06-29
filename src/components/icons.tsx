@@ -51,6 +51,8 @@ import {
   TrendDown,
   Flag,
   ShoppingCart,
+  Brain,
+  Storefront,
 } from "@phosphor-icons/react";
 import type { LayerId } from "../data/types";
 
@@ -118,4 +120,6 @@ export {
   TrendDown,
   Flag,
   ShoppingCart,
+  Brain,
+  Storefront,
 };

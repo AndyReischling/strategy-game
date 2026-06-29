@@ -8,6 +8,7 @@ export const REGIONS: Region[] = [
     flag: "🇫🇷",
     color: "blue",
     anchor: { x: 47.5, y: 35 },
+    strengths: { chips: 0, compute: 2, talent: -1, weights: 2, market: 1, capital: 1 },
     powers: [
       "Nuclear grid — domestic-compute builds cost −40%",
       "State-bank backing (Bpifrance) — one standing loan without a partner",
@@ -32,6 +33,7 @@ export const REGIONS: Region[] = [
     flag: "🇨🇦",
     color: "orange",
     anchor: { x: 21, y: 26 },
+    strengths: { chips: -1, compute: -1, talent: 3, weights: 2, market: 0, capital: 0 },
     powers: [
       "World-class research talent (Mila/Vector/Amii) — model-building −40% on talent",
       "High political standing — trusted broker",
@@ -55,6 +57,7 @@ export const REGIONS: Region[] = [
     flag: "🇳🇱",
     color: "orange",
     anchor: { x: 49, y: 30 },
+    strengths: { chips: 3, compute: -1, talent: 0, weights: 0, market: 0, capital: 0 },
     powers: [
       "The chip chokepoint — gate rivals' Nvidia access",
       "Nvidia allocations at −30%",
@@ -78,6 +81,7 @@ export const REGIONS: Region[] = [
     flag: "🇸🇪",
     color: "teal",
     anchor: { x: 52, y: 19 },
+    strengths: { chips: 0, compute: 3, talent: -1, weights: 0, market: 0, capital: 1 },
     powers: [
       "Renewable power + cold climate — renewable-compute −40%, immune to energy crunch",
       "Sovereign-wealth capital — convert to a standing investment in another player",
@@ -101,6 +105,7 @@ export const REGIONS: Region[] = [
     flag: "🇯🇵",
     color: "violet",
     anchor: { x: 84, y: 36 },
+    strengths: { chips: 2, compute: 1, talent: 0, weights: 0, market: 1, capital: 1 },
     powers: [
       "Domestic hardware supply — supply mid-tier chips without an Nvidia allocation",
       "Sell chip/compute access to others at a profit",
@@ -124,6 +129,7 @@ export const REGIONS: Region[] = [
     flag: "🇩🇪",
     color: "ink",
     anchor: { x: 50.5, y: 30.5 },
+    strengths: { chips: -1, compute: -1, talent: 1, weights: 0, market: 3, capital: 2 },
     powers: [
       "Huge enterprise/industrial market — premium enterprise distribution channel (big Adoption)",
       "Strong Credits position",
@@ -148,6 +154,7 @@ export const REGIONS: Region[] = [
     flag: "🇬🇧",
     color: "blue",
     anchor: { x: 45.5, y: 28 },
+    strengths: { chips: 0, compute: 1, talent: 1, weights: 0, market: 1, capital: 3 },
     powers: [
       "Deep capital markets (City of London) — raise one extra mid-game Credit injection",
       "Strong research base — small discount on model-building",
@@ -172,6 +179,7 @@ export const REGIONS: Region[] = [
     flag: "🏦",
     color: "yellow",
     anchor: { x: 60, y: 45 },
+    strengths: { chips: -1, compute: -1, talent: -1, weights: -1, market: -1, capital: 3 },
     powers: [
       "Bottomless capital — large starting bonus; can buy more spending power",
       "No power, no talent, no chips, no market — builds nothing alone",
@@ -193,6 +201,7 @@ export const REGIONS: Region[] = [
     flag: "🇮🇳",
     color: "orange",
     anchor: { x: 70, y: 47 },
+    strengths: { chips: -1, compute: 0, talent: 2, weights: 0, market: 3, capital: -1 },
     powers: [
       "Vast consumer market + engineering volume — huge consumer distribution channel",
       "−30% on the talent portion of model-building",
@@ -218,6 +227,7 @@ export const REGIONS: Region[] = [
     color: "green",
     advanced: true,
     anchor: { x: 30, y: 62 },
+    strengths: { chips: -1, compute: -1, talent: 0, weights: 3, market: 1, capital: -1 },
     powers: [
       "Openness as leverage — starts holding free open weights it can grant",
       "High political standing; immune to off-switch damage at L4",

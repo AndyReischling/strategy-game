@@ -129,12 +129,20 @@ export interface RegionAsset {
   tradeable: boolean;
 }
 
+/** Dashboard barometer dimensions — a region's structural hand. */
+export type StrengthDim = "chips" | "compute" | "talent" | "weights" | "market" | "capital";
+
+/** -1 short · 0 none · 1 ok · 2 strong · 3 dominant */
+export type StrengthProfile = Record<StrengthDim, number>;
+
 export interface Region {
   id: string;
   name: string;
   flag: string;
   color: SpotColor;
   advanced?: boolean;
+  /** structural strengths/weaknesses shown on the dashboard barometer */
+  strengths: StrengthProfile;
   /** map territory anchor in board % coords (0..100, 0..100) */
   anchor: { x: number; y: number };
   powers: string[];

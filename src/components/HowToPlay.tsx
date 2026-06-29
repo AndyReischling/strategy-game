@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGame } from "../store/useGame";
 import { Term } from "./Term";
 import {
@@ -7,22 +7,35 @@ import {
 } from "./icons";
 import type { Icon } from "./icons";
 
-const STEPS: { icon: Icon; name: string; analogy: string; line: string; term: string }[] = [
-  { icon: Cpu, name: "Chips", analogy: "the engine", line: "The special, powerful parts your AI runs on. Almost nobody makes good ones — so they're the hardest thing to get.", term: "chips" },
-  { icon: Lightning, name: "Compute", analogy: "the powered building", line: "Chips do nothing without a building full of electricity to run them. This is that building.", term: "compute" },
-  { icon: Wrench, name: "Model", analogy: "the cooking", line: "How you make the AI: build one from scratch, improve a free one, or just rent someone else's.", term: "model" },
-  { icon: Package, name: "Weights", analogy: "a recipe you own", line: "The actual AI saved as a file. Own a copy and it's yours forever. Rent it and the owner can pull the plug.", term: "weights" },
-  { icon: DeviceMobile, name: "Hosting", analogy: "the storefront", line: "How real people actually get your AI. This is where you win or lose the race for users.", term: "hosting" },
+const STEPS: { icon: Icon; name: string; analogy: string; line: string; term: string; importance: number; role: string }[] = [
+  { icon: Cpu, name: "Chips", analogy: "the engine", line: "The special, powerful parts your AI runs on. Almost nobody makes good ones — so they're the hardest thing to get.", term: "chips", importance: 2, role: "The scarce foundation" },
+  { icon: Lightning, name: "Compute", analogy: "the powered building", line: "Chips do nothing without a building full of electricity to run them. This is that building.", term: "compute", importance: 2, role: "Sets how big you can build" },
+  { icon: Wrench, name: "Model", analogy: "the cooking", line: "How you make the AI: build one from scratch, improve a free one, or just rent someone else's.", term: "model", importance: 2, role: "The AI itself" },
+  { icon: Package, name: "Weights", analogy: "a recipe you own", line: "The actual AI saved as a file. Own a copy and it's yours forever. Rent it and the owner can pull the plug.", term: "weights", importance: 3, role: "Decides if you OWN it — your independence" },
+  { icon: DeviceMobile, name: "Hosting", analogy: "the storefront", line: "How real people actually get your AI. This is where you win or lose the race for users.", term: "hosting", importance: 3, role: "How you reach users — scored on most" },
 ];
 
 export function HowToPlay() {
   const show = useGame((s) => s.showHowTo);
   const toggle = useGame((s) => s.toggleHowTo);
   const [page, setPage] = useState(0);
-  if (!show) return null;
 
   const pages = 3;
   const close = () => { toggle(false); setPage(0); };
+
+  useEffect(() => {
+    if (!show) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+      if (e.key === "ArrowRight") setPage((p) => Math.min(pages - 1, p + 1));
+      if (e.key === "ArrowLeft") setPage((p) => Math.max(0, p - 1));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [show]);
+
+  if (!show) return null;
 
   return (
     <div className="howto-backdrop" onClick={close}>
@@ -58,19 +71,26 @@ export function HowToPlay() {
           <div className="howto-page">
             <div className="howto-kicker mono upper tiny">How to play · 2 of {pages}</div>
             <h2 className="howto-title">Build your AI in five steps</h2>
-            <p className="howto-lead">Like building a sandwich, bottom to top — pick one option at each step. You don't have to finish all five in one round; build up over the game.</p>
+            <p className="howto-lead">Like building a sandwich, bottom to top — pick one option at each step. You don't have to finish all five in one round; build up over the game. The bars show how much each step <b>drives your score</b>.</p>
             <ul className="howto-steps">
               {STEPS.map((s, i) => (
                 <li key={s.name} className="howto-step">
                   <span className="hs-num mono">{i + 1}</span>
                   <span className="hs-ico"><s.icon size={24} /></span>
                   <span className="hs-body">
-                    <span className="hs-head"><Term id={s.term}>{s.name}</Term> <span className="hs-analogy">— {s.analogy}</span></span>
+                    <span className="hs-head">
+                      <Term id={s.term}>{s.name}</Term> <span className="hs-analogy">— {s.analogy}</span>
+                      <span className="hs-weight" title={`Importance: ${s.importance} of 3`} aria-label={`Importance ${s.importance} of 3`}>
+                        {Array.from({ length: 3 }).map((_, k) => <span key={k} className={`hw-pip ${k < s.importance ? "on" : ""}`} />)}
+                      </span>
+                    </span>
                     <span className="hs-line tiny">{s.line}</span>
+                    <span className="hs-role tiny">▸ {s.role}</span>
                   </span>
                 </li>
               ))}
             </ul>
+            <p className="tiny muted howto-allfive">You need <b>all five</b> — leave a layer empty and your whole stack is capped. A chain is only as strong as its weakest link.</p>
           </div>
         )}
 

@@ -5,6 +5,7 @@ import { EventLog } from "../components/dash/EventLog";
 import { RivalsPanel } from "../components/dash/RivalsPanel";
 import { StackColumn } from "../components/dash/StackColumn";
 import { OptionChooser } from "../components/dash/OptionChooser";
+import { RegionBarometer } from "../components/dash/RegionBarometer";
 import { TradePanel } from "../components/panels/TradePanel";
 import { ScorePanel } from "../components/panels/ScorePanel";
 import { EventCard } from "../components/panels/EventCard";
@@ -83,6 +84,7 @@ export function GameScreen() {
               me ? (
                 <div className="builder">
                   <div className="builder-stack">
+                    <RegionBarometer regionId={me.regionId} />
                     <div className="bs-title tiny upper muted">Your stack</div>
                     <StackColumn player={me} interactive selectedLayer={layer} onSelect={setLayer} />
                   </div>
