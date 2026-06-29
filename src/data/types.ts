@@ -322,6 +322,9 @@ export interface TableState {
   log: LogEntry[];
   /** the shuffled world-event cards drawn for this game (one per round) */
   eventDeck?: string[];
+  /** seed used to draw the event deck — shared across tables in one event so
+   *  every table sees the same card each round (random per event, fair across tables) */
+  eventSeed?: number;
   eventId?: string;
   players: Player[];
   deals: Deal[];

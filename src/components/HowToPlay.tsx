@@ -80,10 +80,10 @@ export function HowToPlay() {
             <h2 className="howto-title">How you win</h2>
             <p className="howto-lead">At the end of five rounds, your AI is scored on four things:</p>
             <ul className="howto-win">
-              <li><Sparkle size={18} /> <b>Users</b> — how many people use your AI <span className="muted">(the big one)</span>.</li>
-              <li><Check size={18} /> <b>Does it fit together?</b> — a bonus if your five choices make sense as a set.</li>
-              <li><ShieldCheck size={18} /> <b>Are you independent?</b> — a bonus for owning your stack; a penalty for borrowing things that can be switched off.</li>
-              <li><Handshake size={18} /> <b>Did you make good deals?</b> — a bonus for trades that filled real gaps.</li>
+              <li><Sparkle size={18} className="win-ico" /><span><b>Users</b> — how many people use your AI <span className="muted">(the big one)</span>.</span></li>
+              <li><Check size={18} className="win-ico" /><span><b>Does it fit together?</b> — a bonus if your five choices make sense as a set.</span></li>
+              <li><ShieldCheck size={18} className="win-ico" /><span><b>Are you independent?</b> — a bonus for owning your stack; a penalty for borrowing things that can be switched off.</span></li>
+              <li><Handshake size={18} className="win-ico" /><span><b>Did you make good deals?</b> — a bonus for trades that filled real gaps.</span></li>
             </ul>
             <div className="howto-rule card c-orange">
               <Power size={22} />

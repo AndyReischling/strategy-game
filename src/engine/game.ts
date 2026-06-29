@@ -38,10 +38,12 @@ export function emptyScore(): ScoreBreakdown {
   };
 }
 
-export function newTable(code: string, seed?: number): TableState {
-  // Each game gets its own random seed (unless one is passed for tests), so the
-  // world-event draw AND the off-switch dice differ every game — not a fixed
-  // pattern keyed to the table code.
+export function newTable(code: string, seed?: number, eventSeed?: number): TableState {
+  // Each game gets its own random per-table seed (unless one is passed for
+  // tests) — drives the off-switch dice, which are per-table. The event deck
+  // uses a separate eventSeed that the server shares across every table, so
+  // all tables see the same world-event card each round (random per event,
+  // but synchronized for a fair leaderboard).
   const gameSeed =
     seed ?? ((hashStringToSeed(code.toUpperCase()) ^ Math.floor(Math.random() * 0xffffffff)) >>> 0);
   return {
@@ -52,6 +54,7 @@ export function newTable(code: string, seed?: number): TableState {
     players: [],
     deals: [],
     seed: gameSeed,
+    eventSeed,
     updatedAt: Date.now(),
   };
 }
@@ -317,7 +320,7 @@ function enterPhase(table: TableState, phase: TableState["phase"]) {
   switch (phase) {
     case "market-open": {
       if (!table.eventDeck || table.eventDeck.length === 0) {
-        table.eventDeck = drawEventDeck(table.seed, CONFIG.totalRounds);
+        table.eventDeck = drawEventDeck(table.eventSeed ?? table.seed, CONFIG.totalRounds);
       }
       table.eventId = table.eventDeck[(table.round - 1) % table.eventDeck.length];
       if (table.round > 1) applyRoundStart(table);
@@ -424,7 +427,7 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       const ready = table.players.filter((p) => p.ready);
       if (ready.length === 0) { error = "Pick a region first."; break; }
       pushLog(table, "game", `Game begins — ${ready.length} player${ready.length === 1 ? "" : "s"}.`);
-      table.eventDeck = drawEventDeck(table.seed, CONFIG.totalRounds);
+      table.eventDeck = drawEventDeck(table.eventSeed ?? table.seed, CONFIG.totalRounds);
       table.round = 1;
       enterPhase(table, "market-open");
       break;
@@ -544,7 +547,8 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       break;
     }
     case "resetTable": {
-      const fresh = newTable(table.code);
+      // keep the shared event seed so a re-played table stays synced with the event
+      const fresh = newTable(table.code, undefined, table.eventSeed);
       Object.assign(table, fresh);
       break;
     }

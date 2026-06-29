@@ -13,6 +13,12 @@ import { buildLeaderboard } from "../src/engine/leaderboard";
 
 const PORT = Number(process.env.PORT ?? 8787);
 
+// One shared event seed for the whole server run, so every table draws the SAME
+// shuffled world-event deck (the same card each round) — random per event, but
+// synchronized across all tables for a fair cross-table leaderboard.
+// Pin it with EVENT_SEED=<number> to reproduce a specific event run.
+const EVENT_SEED = Number(process.env.EVENT_SEED ?? Math.floor(Math.random() * 0xffffffff)) >>> 0;
+
 const tables = new Map<string, TableState>();
 const rooms = new Map<string, Set<WebSocket>>(); // code -> sockets
 const everyone = new Set<WebSocket>();
@@ -27,7 +33,7 @@ function getTable(code: string): TableState {
   const key = code.toUpperCase();
   let t = tables.get(key);
   if (!t) {
-    t = newTable(key);
+    t = newTable(key, undefined, EVENT_SEED);
     tables.set(key, t);
   }
   return t;
@@ -139,5 +145,5 @@ wss.on("connection", (ws) => {
 
 http.listen(PORT, () => {
   // eslint-disable-next-line no-console
-  console.log(`▶ Sovereign Stack server listening on :${PORT} (ws + http)`);
+  console.log(`▶ Sovereign Stack server listening on :${PORT} (ws + http) · event seed ${EVENT_SEED}`);
 });
