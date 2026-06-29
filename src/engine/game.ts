@@ -1,0 +1,501 @@
+import type {
+  TableState,
+  Player,
+  Deal,
+  LayerId,
+  ScoreBreakdown,
+  SpotColor,
+  OffSwitchPlayerResult,
+} from "../data/types";
+import type { GameAction } from "./actions";
+import { PHASE_ORDER } from "./actions";
+import { CONFIG, SEAT_COLORS } from "../data/config";
+import { REGIONS, REGION_BY_ID } from "../data/regions";
+import { OPTION_BY_ID } from "../data/layers";
+import {
+  EVENT_BY_ID,
+  SEEDED_EVENT_ORDER,
+  OFFSWITCH_OUTCOMES,
+} from "../data/events";
+import { priceFor } from "./pricing";
+import { computeScore } from "./scoring";
+import { canBuild } from "./preconditions";
+import { resolveOffSwitch } from "./offswitch";
+import { mulberry32, rollDie, hashStringToSeed } from "./rng";
+
+const BOT_NAMES = ["Atlas", "Borealis", "Cygnus", "Delta", "Echo", "Fjord"];
+
+export function emptyScore(): ScoreBreakdown {
+  return {
+    rawAdoption: 0,
+    coherence: 1,
+    sovereignty: 1,
+    deals: 0,
+    fragilityPenalty: 0,
+    final: 0,
+    notes: [],
+  };
+}
+
+export function newTable(code: string): TableState {
+  return {
+    code: code.toUpperCase(),
+    round: 0,
+    phase: "lobby",
+    players: [],
+    deals: [],
+    seed: hashStringToSeed(code.toUpperCase()),
+    updatedAt: Date.now(),
+  };
+}
+
+export function newPlayer(id: string, name: string, isHuman: boolean): Player {
+  return {
+    id,
+    name,
+    regionId: "",
+    color: "blue",
+    credits: CONFIG.startingBudget,
+    picks: {},
+    paid: {},
+    lockedLayers: [],
+    assets: [],
+    unlocks: [],
+    fragility: [],
+    backers: [],
+    isHuman,
+    ready: false,
+    score: emptyScore(),
+  };
+}
+
+function findPlayer(table: TableState, id: string): Player | undefined {
+  return table.players.find((p) => p.id === id);
+}
+
+function assignColor(table: TableState): SpotColor {
+  const used = new Set(table.players.map((p) => p.color));
+  for (const c of SEAT_COLORS) if (!used.has(c)) return c as SpotColor;
+  return SEAT_COLORS[table.players.length % SEAT_COLORS.length] as SpotColor;
+}
+
+function activeDeals(table: TableState): Deal[] {
+  return table.deals.filter((d) => d.active && !d.broken);
+}
+
+// ─── Unlocks recomputed from active deals + region inherent (inherent merged in canBuild) ──
+function recomputeUnlocks(table: TableState) {
+  for (const p of table.players) {
+    const unlocks = new Set<Player["unlocks"][number]>();
+    for (const d of activeDeals(table)) {
+      if (d.toPlayerId === p.id && d.terms.grantsPrecondition) {
+        unlocks.add(d.terms.grantsPrecondition);
+      }
+    }
+    p.unlocks = Array.from(unlocks);
+  }
+}
+
+// ─── Deal execution ────────────────────────────────────────────────────────
+function moveAsset(table: TableState, deal: Deal) {
+  const assetId = deal.terms.assetId;
+  if (!assetId || deal.terms.lease) return; // lease keeps ownership
+  const from = findPlayer(table, deal.fromPlayerId);
+  const to = findPlayer(table, deal.toPlayerId);
+  if (!from || !to) return;
+  // move from whichever side currently holds it to the other
+  if (from.assets.includes(assetId)) {
+    from.assets = from.assets.filter((a) => a !== assetId);
+    if (!to.assets.includes(assetId)) to.assets.push(assetId);
+  } else if (to.assets.includes(assetId)) {
+    to.assets = to.assets.filter((a) => a !== assetId);
+    if (!from.assets.includes(assetId)) from.assets.push(assetId);
+  }
+}
+
+function moveCredits(table: TableState, deal: Deal) {
+  const c = deal.terms.creditsFromTo ?? 0;
+  if (!c) return;
+  const from = findPlayer(table, deal.fromPlayerId);
+  const to = findPlayer(table, deal.toPlayerId);
+  if (!from || !to) return;
+  from.credits = Math.max(0, from.credits - c);
+  to.credits += c;
+}
+
+function executeDealOnce(table: TableState, deal: Deal) {
+  moveCredits(table, deal);
+  moveAsset(table, deal);
+  if (deal.terms.investorCut) {
+    const to = findPlayer(table, deal.toPlayerId);
+    if (to && !to.backers.some((b) => b.investorId === deal.fromPlayerId)) {
+      to.backers.push({ investorId: deal.fromPlayerId, cut: deal.terms.investorCut });
+    }
+  }
+}
+
+// ─── Region setup: give a player its starting assets ─────────────────────────
+function grantStartingAssets(player: Player) {
+  const region = REGION_BY_ID[player.regionId];
+  if (!region) return;
+  player.assets = region.assets.filter((a) => a.tradeable).map((a) => a.id);
+  player.credits = CONFIG.startingBudget + region.creditBonus;
+}
+
+// ─── Round economy: recurring costs + standing deals + stipend ───────────────
+function applyRoundStart(table: TableState) {
+  // standing/lease recurring credit transfers
+  for (const d of activeDeals(table)) {
+    if (d.standing || d.terms.lease) moveCredits(table, d);
+  }
+  // recurring option costs (rented weights, etc.)
+  for (const p of table.players) {
+    for (const optionId of Object.values(p.picks)) {
+      if (!optionId) continue;
+      const opt = OPTION_BY_ID[optionId];
+      if (opt?.recurring) p.credits = Math.max(0, p.credits - opt.recurring);
+    }
+    if (CONFIG.perRoundStipend) p.credits += CONFIG.perRoundStipend;
+  }
+}
+
+// ─── Bots: simple sovereign-leaning heuristic build ──────────────────────────
+const BOT_PLAN: Record<LayerId, string[]> = {
+  chips: ["c-sovereign-chips", "c-japan-korea", "c-chinese"],
+  compute: ["co-renewable", "co-sovereign-cloud", "co-eurohpc", "co-foreign-hyperscaler"],
+  model: ["m-finetune", "m-localize", "m-distill", "m-pretrain-small"],
+  weights: ["w-mistral", "w-llama", "w-nemotron"],
+  hosting: ["h-national-app", "h-on-device", "h-foreign-cloud"],
+};
+
+function botBuild(table: TableState, bot: Player) {
+  const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
+  const region = REGION_BY_ID[bot.regionId];
+  if (!region) return;
+  for (const layer of Object.keys(BOT_PLAN) as LayerId[]) {
+    if (bot.picks[layer]) continue;
+    for (const optId of BOT_PLAN[layer]) {
+      const opt = OPTION_BY_ID[optId];
+      if (!opt) continue;
+      const check = canBuild(bot, opt);
+      if (!check.ok) continue;
+      const price = priceFor(opt, region, event);
+      if (price.frozen) continue;
+      if (bot.credits >= price.cost) {
+        bot.credits -= price.cost;
+        bot.picks[layer] = optId;
+        bot.paid[layer] = price.cost;
+        break;
+      }
+    }
+  }
+}
+
+// ─── Off-switch roll ─────────────────────────────────────────────────────────
+function rollOffSwitch(table: TableState) {
+  const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
+  const rng = mulberry32(table.seed ^ hashStringToSeed(`r${table.round}-os`));
+  const twice = event?.effects.some((e) => e.kind === "offswitch-twice") ?? false;
+  const numRolls = twice ? 2 : 1;
+
+  const rolls: number[] = [];
+  let triggered = false;
+  for (let i = 0; i < numRolls; i++) {
+    const v = rollDie(rng);
+    rolls.push(v);
+    if (v >= CONFIG.offSwitch.triggerMin) triggered = true;
+  }
+
+  const results: OffSwitchPlayerResult[] = [];
+  let outcomeId: string | undefined;
+
+  if (triggered) {
+    const outcome = OFFSWITCH_OUTCOMES[Math.floor(rng() * OFFSWITCH_OUTCOMES.length)];
+    outcomeId = outcome.id;
+    for (const p of table.players) {
+      if (!p.ready) continue;
+      const res = resolveOffSwitch(p, outcome, table.round, event);
+      p.fragility.push(...res.newMarks);
+      results.push({
+        playerId: p.id,
+        spared: res.spared,
+        falseAlarm: !!outcome.falseAlarm,
+        damagedLayers: res.damaged.map((d) => d.layer),
+        adoptionLost: res.adoptionLost,
+      });
+    }
+
+    // Standing deals can snap under pressure (§4b): both sides pay a penalty.
+    if (!outcome.falseAlarm) {
+      const broken: string[] = [];
+      for (const d of table.deals) {
+        if (!d.active || d.broken || !d.standing) continue;
+        if (rng() < 0.18) {
+          d.broken = true;
+          d.active = false;
+          broken.push(d.id);
+          for (const id of [d.fromPlayerId, d.toPlayerId]) {
+            const pl = findPlayer(table, id);
+            if (pl) pl.credits = Math.max(0, pl.credits - CONFIG.deals.breakPenalty);
+          }
+        }
+      }
+      table.brokenDeals = broken;
+    }
+  } else {
+    for (const p of table.players) {
+      if (!p.ready) continue;
+      results.push({ playerId: p.id, spared: true, falseAlarm: false, damagedLayers: [], adoptionLost: 0 });
+    }
+  }
+
+  table.lastRoll = { rolls, triggered, outcomeId, results };
+}
+
+// ─── Score tick ──────────────────────────────────────────────────────────────
+function scoreTick(table: TableState) {
+  const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
+  const dealBonus = event?.effects.find((e) => e.kind === "deal-bonus")?.amount ?? 0;
+  const deals = activeDeals(table);
+  for (const p of table.players) {
+    if (!p.ready) continue;
+    p.score = computeScore(p, deals, { dealBonusPerDeal: dealBonus });
+  }
+  // backers take their cut of the backed player's final score
+  for (const p of table.players) {
+    for (const b of p.backers) {
+      const investor = findPlayer(table, b.investorId);
+      if (investor) {
+        investor.score.final = Math.round((investor.score.final + p.score.final * b.cut) * 10) / 10;
+        investor.score.notes.push(`+${Math.round(p.score.final * b.cut)} from backing ${p.name}.`);
+      }
+    }
+  }
+}
+
+// ─── Phase entry ─────────────────────────────────────────────────────────────
+function enterPhase(table: TableState, phase: TableState["phase"]) {
+  table.phase = phase;
+  switch (phase) {
+    case "market-open": {
+      table.eventId = SEEDED_EVENT_ORDER[(table.round - 1) % SEEDED_EVENT_ORDER.length];
+      if (table.round > 1) applyRoundStart(table);
+      recomputeUnlocks(table);
+      table.lastRoll = undefined;
+      table.brokenDeals = undefined;
+      break;
+    }
+    case "build": {
+      for (const bot of table.players.filter((p) => !p.isHuman && p.ready)) botBuild(table, bot);
+      break;
+    }
+    case "off-switch":
+      rollOffSwitch(table);
+      break;
+    case "score":
+      scoreTick(table);
+      break;
+    default:
+      break;
+  }
+}
+
+// ─── Build / market spend ────────────────────────────────────────────────────
+function setPick(table: TableState, player: Player, layer: LayerId, optionId: string): string | null {
+  if (table.phase !== "build" && table.phase !== "trade" && table.phase !== "market-open")
+    return "You can only build during the build & trade phases.";
+  const option = OPTION_BY_ID[optionId];
+  if (!option || option.layer !== layer) return "Unknown option.";
+  const region = REGION_BY_ID[player.regionId];
+  if (!region) return "Pick a region first.";
+
+  const check = canBuild(player, option);
+  if (!check.ok) return `Needs ${check.needs}.`;
+
+  const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
+  const price = priceFor(option, region, event);
+  if (price.frozen) return "Frozen this round by the world event — strike a deal.";
+
+  const refund = player.paid[layer] ?? 0;
+  const penalty = player.lockedLayers.includes(layer) ? CONFIG.switchingCostPenalty : 0;
+  const available = player.credits + refund;
+  if (available < price.cost + penalty) return "Not enough Credits.";
+
+  player.credits = available - price.cost - penalty;
+  player.picks[layer] = optionId;
+  player.paid[layer] = price.cost;
+  return null;
+}
+
+// ─── The reducer ─────────────────────────────────────────────────────────────
+export function applyAction(table: TableState, action: GameAction): { error?: string } {
+  let error: string | undefined;
+
+  switch (action.type) {
+    case "join": {
+      if (!findPlayer(table, action.playerId)) {
+        if (table.players.length >= CONFIG.maxPlayersPerTable && table.phase === "lobby") {
+          error = "Table is full (6 players).";
+          break;
+        }
+        const p = newPlayer(action.playerId, action.name || "Player", true);
+        p.color = assignColor(table);
+        table.players.push(p);
+        if (!table.hostId) table.hostId = action.playerId;
+      }
+      break;
+    }
+    case "rename": {
+      const p = findPlayer(table, action.playerId);
+      if (p) p.name = action.name;
+      break;
+    }
+    case "pickRegion": {
+      const p = findPlayer(table, action.playerId);
+      if (!p) { error = "Not at this table."; break; }
+      if (table.phase !== "lobby") { error = "Regions lock once the game starts."; break; }
+      const taken = table.players.some((o) => o.id !== p.id && o.regionId === action.regionId);
+      if (taken) { error = "That region is already taken."; break; }
+      p.regionId = action.regionId;
+      p.ready = true;
+      grantStartingAssets(p);
+      break;
+    }
+    case "addBots": {
+      if (table.phase !== "lobby") { error = "Can only add bots in the lobby."; break; }
+      const free = REGIONS.filter((r) => !table.players.some((p) => p.regionId === r.id));
+      const n = Math.min(action.count, CONFIG.maxPlayersPerTable - table.players.length, free.length);
+      for (let i = 0; i < n; i++) {
+        const bot = newPlayer(`bot-${Date.now()}-${i}`, BOT_NAMES[(table.players.length) % BOT_NAMES.length] + " (bot)", false);
+        bot.color = assignColor(table);
+        bot.regionId = free[i].id;
+        bot.ready = true;
+        table.players.push(bot);
+        grantStartingAssets(bot);
+      }
+      break;
+    }
+    case "startGame": {
+      if (table.phase !== "lobby") break;
+      const ready = table.players.filter((p) => p.ready);
+      if (ready.length === 0) { error = "Pick a region first."; break; }
+      table.round = 1;
+      enterPhase(table, "market-open");
+      break;
+    }
+    case "setPick": {
+      const p = findPlayer(table, action.playerId);
+      if (!p) { error = "Not at this table."; break; }
+      error = setPick(table, p, action.layer, action.optionId) ?? undefined;
+      break;
+    }
+    case "clearPick": {
+      const p = findPlayer(table, action.playerId);
+      if (!p) break;
+      const refund = p.paid[action.layer] ?? 0;
+      p.credits += refund;
+      delete p.picks[action.layer];
+      delete p.paid[action.layer];
+      break;
+    }
+    case "raiseCapital": {
+      const p = findPlayer(table, action.playerId);
+      if (!p) break;
+      if (p.regionId !== "uk" && p.regionId !== "gulf-swf" && p.regionId !== "france") {
+        error = "Only the UK, France (Bpifrance) or the Gulf can raise extra capital.";
+        break;
+      }
+      if ((p as Player & { raised?: boolean }).raised) { error = "Already raised this game."; break; }
+      p.credits += 5;
+      (p as Player & { raised?: boolean }).raised = true;
+      break;
+    }
+    case "proposeDeal": {
+      const from = findPlayer(table, action.playerId);
+      const to = findPlayer(table, action.toPlayerId);
+      if (!from || !to) { error = "Player not found."; break; }
+      if (table.phase !== "trade" && table.phase !== "market-open" && table.phase !== "build") {
+        error = "Deals happen during the build & trade phases.";
+        break;
+      }
+      const deal: Deal = {
+        id: `deal-${table.deals.length}-${Math.floor(table.seed % 9999)}-${Date.now() % 100000}`,
+        kind: action.kind,
+        fromPlayerId: from.id,
+        toPlayerId: to.id,
+        terms: { ...action.terms, fillsGap: action.terms.fillsGap || !!action.terms.grantsPrecondition },
+        standing: action.standing,
+        confirmedFrom: true,
+        confirmedTo: !to.isHuman, // bots auto-accept reasonable offers? keep manual: false unless bot
+        roundCreated: table.round,
+        active: false,
+      };
+      // bots auto-accept deals that give them credits or cost them nothing
+      if (!to.isHuman) {
+        const c = action.terms.creditsFromTo ?? 0;
+        deal.confirmedTo = c >= 0 || !!action.terms.assetId;
+      }
+      table.deals.push(deal);
+      if (deal.confirmedFrom && deal.confirmedTo) {
+        deal.active = true;
+        executeDealOnce(table, deal);
+        recomputeUnlocks(table);
+      }
+      break;
+    }
+    case "confirmDeal": {
+      const p = findPlayer(table, action.playerId);
+      const deal = table.deals.find((d) => d.id === action.dealId);
+      if (!p || !deal) break;
+      if (deal.fromPlayerId === p.id) deal.confirmedFrom = true;
+      if (deal.toPlayerId === p.id) deal.confirmedTo = true;
+      if (deal.confirmedFrom && deal.confirmedTo && !deal.active) {
+        deal.active = true;
+        executeDealOnce(table, deal);
+        recomputeUnlocks(table);
+      }
+      break;
+    }
+    case "cancelDeal": {
+      const deal = table.deals.find((d) => d.id === action.dealId);
+      if (deal) { deal.active = false; deal.broken = false; }
+      recomputeUnlocks(table);
+      break;
+    }
+    case "advancePhase": {
+      if (table.phase === "lobby" || table.phase === "final") break;
+      // lock built layers at the end of the build phase
+      if (table.phase === "build") {
+        for (const p of table.players) {
+          for (const layer of Object.keys(p.picks) as LayerId[]) {
+            if (!p.lockedLayers.includes(layer)) p.lockedLayers.push(layer);
+          }
+        }
+      }
+      if (table.phase === "score") {
+        if (table.round < CONFIG.totalRounds) {
+          // deactivate one-off (non-standing) deals before the next round
+          for (const d of table.deals) if (!d.standing && !d.terms.lease) d.active = false;
+          table.round += 1;
+          enterPhase(table, "market-open");
+        } else {
+          table.phase = "final";
+        }
+        break;
+      }
+      const idx = PHASE_ORDER.indexOf(table.phase as (typeof PHASE_ORDER)[number]);
+      if (idx >= 0 && idx < PHASE_ORDER.length - 1) {
+        enterPhase(table, PHASE_ORDER[idx + 1]);
+      }
+      break;
+    }
+    case "resetTable": {
+      const fresh = newTable(table.code);
+      Object.assign(table, fresh);
+      break;
+    }
+  }
+
+  table.updatedAt = Date.now();
+  return { error };
+}
