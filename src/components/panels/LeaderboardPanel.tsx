@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGame } from "../../store/useGame";
+import { Trophy, X } from "../icons";
 
 export function LeaderboardPanel() {
   const leaderboard = useGame((s) => s.leaderboard);
@@ -14,8 +15,8 @@ export function LeaderboardPanel() {
     <div className="drawer-backdrop" onClick={() => toggle(false)}>
       <aside className="drawer card lb-drawer" onClick={(e) => e.stopPropagation()} aria-label="Leaderboard">
         <div className="row between" style={{ marginBottom: "0.6rem" }}>
-          <h2 style={{ fontSize: "1.6rem" }}>🏆 Leaderboard</h2>
-          <button className="btn btn-sm" onClick={() => toggle(false)}>Close ✕</button>
+          <h2 style={{ fontSize: "1.6rem", display: "flex", alignItems: "center", gap: "0.4rem" }}><Trophy size={22} /> Leaderboard</h2>
+          <button className="btn btn-sm" onClick={() => toggle(false)}><X size={14} /> Close</button>
         </div>
         <div className="kind-tabs">
           <button className={`kind-tab ${scope === "global" ? "on" : ""}`} onClick={() => setScope("global")}>All tables</button>

@@ -3,8 +3,7 @@ import { OUTCOME_BY_ID } from "../../data/events";
 import { REGION_BY_ID } from "../../data/regions";
 import { CONFIG } from "../../data/config";
 import { Term } from "../Term";
-
-const PIPS = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+import { DICE, Check, Warning } from "../icons";
 
 export function OffSwitchOverlay() {
   const table = useGame((s) => s.table)!;
@@ -17,9 +16,10 @@ export function OffSwitchOverlay() {
       <div className={`offswitch-card card offset ${roll.triggered ? "c-orange" : "c-green"}`}>
         <div className="event-kicker mono upper tiny"><Term id="off-switch">Off-switch</Term> die · trigger {CONFIG.offSwitch.triggerMin}–6</div>
         <div className="dice-row">
-          {roll.rolls.map((v, i) => (
-            <span key={i} className={`die ${v >= CONFIG.offSwitch.triggerMin ? "hot" : ""}`}>{PIPS[v]}</span>
-          ))}
+          {roll.rolls.map((v, i) => {
+            const Die = DICE[v] ?? DICE[1];
+            return <Die key={i} size={64} weight="fill" className={`die ${v >= CONFIG.offSwitch.triggerMin ? "hot" : ""}`} />;
+          })}
         </div>
 
         {!roll.triggered ? (
@@ -42,9 +42,9 @@ export function OffSwitchOverlay() {
                     {r.falseAlarm ? (
                       <span className="tiny">flagged — a free warning</span>
                     ) : r.spared ? (
-                      <span className="tiny good-text">✓ shrugged it off</span>
+                      <span className="tiny good-text row gap-1"><Check size={14} /> shrugged it off</span>
                     ) : (
-                      <span className="tiny warn-text">⚡ −{r.adoptionLost} adoption · {r.damagedLayers.join(", ")} cracked</span>
+                      <span className="tiny warn-text row gap-1"><Warning size={14} /> −{r.adoptionLost} adoption · {r.damagedLayers.join(", ")} cracked</span>
                     )}
                   </div>
                 );

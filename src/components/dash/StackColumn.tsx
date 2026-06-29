@@ -1,0 +1,71 @@
+import type { Player, LayerId } from "../../data/types";
+import { LAYERS, OPTION_BY_ID } from "../../data/layers";
+import { exposedLayers } from "../../engine/offswitch";
+import { LAYER_ICON, Warning, Check, CaretRight } from "../icons";
+
+// The stack, rendered as a literal stack of blocks (hosting on top → chips at
+// the base, like building a sandwich). This is the central turn metaphor.
+const TOP_DOWN = [...LAYERS].reverse();
+
+interface Props {
+  player: Player;
+  interactive?: boolean;
+  selectedLayer?: LayerId | null;
+  onSelect?: (l: LayerId) => void;
+  compact?: boolean;
+}
+
+export function StackColumn({ player, interactive, selectedLayer, onSelect, compact }: Props) {
+  const exposed = new Set(exposedLayers(player).map((e) => e.layer));
+
+  if (compact) {
+    return (
+      <div className={`stack-compact c-${player.color}`}>
+        {TOP_DOWN.map((l) => {
+          const optId = player.picks[l.id];
+          const Icon = LAYER_ICON[l.id];
+          return (
+            <span
+              key={l.id}
+              className={`sc-cell ${optId ? "filled" : "empty"} ${exposed.has(l.id) ? "exp" : ""}`}
+              title={optId ? `${l.name}: ${OPTION_BY_ID[optId]?.name}` : `${l.name}: empty`}
+            >
+              <Icon size={13} />
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`stack-col c-${player.color}`}>
+      {TOP_DOWN.map((l) => {
+        const optId = player.picks[l.id];
+        const opt = optId ? OPTION_BY_ID[optId] : undefined;
+        const Icon = LAYER_ICON[l.id];
+        const isSel = selectedLayer === l.id;
+        const isExp = exposed.has(l.id);
+        const Tag = interactive ? "button" : "div";
+        return (
+          <Tag
+            key={l.id}
+            className={`stack-block ${opt ? "built" : "empty"} ${isSel ? "sel" : ""} ${isExp ? "exposed" : ""}`}
+            onClick={interactive ? () => onSelect?.(l.id) : undefined}
+            {...(interactive ? { type: "button" as const } : {})}
+          >
+            <span className="sb-icon"><Icon size={20} /></span>
+            <span className="sb-text">
+              <span className="sb-layer tiny mono">{l.index} · {l.name}</span>
+              <span className="sb-opt">{opt ? opt.name : "Choose an option"}</span>
+            </span>
+            <span className="sb-side">
+              {isExp && <Warning size={16} className="sb-warn" />}
+              {opt ? <Check size={16} className="sb-check" /> : interactive ? <CaretRight size={16} /> : null}
+            </span>
+          </Tag>
+        );
+      })}
+    </div>
+  );
+}

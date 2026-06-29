@@ -304,11 +304,22 @@ export interface OffSwitchPlayerResult {
   adoptionLost: number;
 }
 
+export type LogKind = "round" | "event" | "build" | "deal" | "offswitch" | "score" | "game";
+
+export interface LogEntry {
+  id: number;
+  round: number;
+  kind: LogKind;
+  text: string;
+  ts: number;
+}
+
 export interface TableState {
   code: string;
   round: number;
   phase: Phase;
   hostId?: string;
+  log: LogEntry[];
   eventId?: string;
   players: Player[];
   deals: Deal[];

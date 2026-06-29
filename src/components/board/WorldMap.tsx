@@ -6,6 +6,7 @@ import { exposedLayers } from "../../engine/offswitch";
 import { Building } from "./Building";
 import { CONTINENTS, CLOUDS } from "./mapPaths";
 import { COLOR_HEX } from "../util";
+import { BENCH_ICON, Cpu, ArrowCounterClockwise, ArrowClockwise, Plus, Minus, CrosshairSimple, Globe } from "../icons";
 
 const BOARD_H = 64; // board units tall (x is 0..100)
 const tx = (x: number) => `${x}%`;
@@ -111,14 +112,15 @@ export function WorldMap({ table, meId, reducedMotion }: Props) {
             </svg>
 
             {/* Benchmark + alternative-supply markers */}
-            {BENCHMARK_MARKERS.map((m) => (
-              <div key={m.id} className={`bench ${m.dominant ? "dominant" : ""}`} style={{ left: tx(m.anchor.x), top: ty(m.anchor.y), transform: `translate(-50%,-100%) ${billboard}` }}>
-                <div className="bench-stack">
-                  {m.dominant ? "🏙️🏢🏭" : m.id === "china" ? "🏯" : "🎓"}
+            {BENCHMARK_MARKERS.map((m) => {
+              const BIcon = BENCH_ICON[m.id] ?? Cpu;
+              return (
+                <div key={m.id} className={`bench ${m.dominant ? "dominant" : ""}`} style={{ left: tx(m.anchor.x), top: ty(m.anchor.y), transform: `translate(-50%,-100%) ${billboard}` }}>
+                  <div className="bench-stack"><BIcon size={m.dominant ? 44 : 26} weight="fill" /></div>
+                  <div className="bench-label tiny mono">{m.flag} {m.name}</div>
                 </div>
-                <div className="bench-label tiny mono">{m.flag} {m.name}</div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Player territories + skylines */}
             {table.players.filter((p) => p.ready).map((p) => {
@@ -167,12 +169,12 @@ export function WorldMap({ table, meId, reducedMotion }: Props) {
 
       {/* Board controls (§10.3) */}
       <div className="board-controls">
-        <button className="btn btn-sm" aria-label="Orbit left" onClick={() => setOrbit((o) => o - 15)}>↺</button>
-        <button className="btn btn-sm" aria-label="Orbit right" onClick={() => setOrbit((o) => o + 15)}>↻</button>
-        <button className="btn btn-sm" aria-label="Zoom in" onClick={() => setZoom((z) => Math.min(3.2, z + 0.3))}>+</button>
-        <button className="btn btn-sm" aria-label="Zoom out" onClick={() => setZoom((z) => Math.max(0.7, z - 0.3))}>−</button>
-        <button className="btn btn-sm" aria-label="My region" onClick={() => focusRegion(me)}>◉ Me</button>
-        <button className="btn btn-sm" aria-label="Whole world" onClick={() => { setOrbit(0); focusRegion(undefined); }}>🌍</button>
+        <button className="btn btn-sm" aria-label="Orbit left" onClick={() => setOrbit((o) => o - 15)}><ArrowCounterClockwise size={16} /></button>
+        <button className="btn btn-sm" aria-label="Orbit right" onClick={() => setOrbit((o) => o + 15)}><ArrowClockwise size={16} /></button>
+        <button className="btn btn-sm" aria-label="Zoom in" onClick={() => setZoom((z) => Math.min(3.2, z + 0.3))}><Plus size={16} /></button>
+        <button className="btn btn-sm" aria-label="Zoom out" onClick={() => setZoom((z) => Math.max(0.7, z - 0.3))}><Minus size={16} /></button>
+        <button className="btn btn-sm" aria-label="My region" onClick={() => focusRegion(me)}><CrosshairSimple size={16} /></button>
+        <button className="btn btn-sm" aria-label="Whole world" onClick={() => { setOrbit(0); focusRegion(undefined); }}><Globe size={16} /></button>
       </div>
     </div>
   );

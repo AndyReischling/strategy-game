@@ -3,10 +3,11 @@ import { useGame } from "../../store/useGame";
 import { REGION_BY_ID } from "../../data/regions";
 import { Term } from "../Term";
 
-export function ScorePanel({ onClose }: { onClose: () => void }) {
+export function ScorePanel() {
   const table = useGame((s) => s.table)!;
   const playerId = useGame((s) => s.playerId);
-  const [viewId, setViewId] = useState(playerId);
+  const inspectId = useGame((s) => s.inspectPlayerId);
+  const [viewId, setViewId] = useState(inspectId ?? playerId);
   const ready = table.players.filter((p) => p.ready);
   const p = ready.find((x) => x.id === viewId) ?? ready[0];
   if (!p) return null;
@@ -14,15 +15,7 @@ export function ScorePanel({ onClose }: { onClose: () => void }) {
   const region = REGION_BY_ID[p.regionId];
 
   return (
-    <div className="sheet score-sheet" role="dialog" aria-label="Score breakdown">
-      <div className="sheet-head">
-        <div>
-          <h2>Score breakdown</h2>
-          <p className="tiny muted">Why you're winning or losing — the four components.</p>
-        </div>
-        <button className="btn btn-sm" onClick={onClose}>Close ✕</button>
-      </div>
-
+    <div className="stage-panel score-view" aria-label="Score breakdown">
       <div className="score-switch row wrap gap-1">
         {ready.map((pl) => (
           <button key={pl.id} className={`chip-btn c-${pl.color} ${pl.id === p.id ? "on" : ""}`} onClick={() => setViewId(pl.id)}>

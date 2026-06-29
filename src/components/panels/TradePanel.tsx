@@ -25,7 +25,7 @@ const PRECOND_LABEL: Partial<Record<Precondition, string>> = {
   "oss-grant": "OSS open-weights grant",
 };
 
-export function TradePanel({ onClose }: { onClose: () => void }) {
+export function TradePanel() {
   const table = useGame((s) => s.table)!;
   const playerId = useGame((s) => s.playerId);
   const dispatch = useGame((s) => s.dispatch);
@@ -77,14 +77,8 @@ export function TradePanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="sheet trade-sheet" role="dialog" aria-label="Deals">
-      <div className="sheet-head">
-        <div>
-          <h2>Deals</h2>
-          <p className="tiny muted">Bilateral trades. Both sides confirm; the app moves Credits, assets & unlocks, and draws a road. <Term id="standing-deal">Standing deals</Term> pulse — and can break.</p>
-        </div>
-        <button className="btn btn-sm" onClick={onClose}>Close ✕</button>
-      </div>
+    <div className="stage-panel trade-view" aria-label="Deals">
+      <p className="tiny muted" style={{ marginTop: 0 }}>Bilateral trades. Both sides confirm; the app moves Credits, assets & unlocks, and draws a road on the world map. <Term id="standing-deal">Standing deals</Term> pulse — and can break.</p>
 
       {others.length === 0 ? (
         <p className="muted">No one else at the table yet. Deals need a partner.</p>

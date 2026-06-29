@@ -3,6 +3,7 @@ import type {
   Player,
   Deal,
   LayerId,
+  LogKind,
   ScoreBreakdown,
   SpotColor,
   OffSwitchPlayerResult,
@@ -42,11 +43,17 @@ export function newTable(code: string): TableState {
     code: code.toUpperCase(),
     round: 0,
     phase: "lobby",
+    log: [],
     players: [],
     deals: [],
     seed: hashStringToSeed(code.toUpperCase()),
     updatedAt: Date.now(),
   };
+}
+
+function pushLog(table: TableState, kind: LogKind, text: string) {
+  table.log.push({ id: table.log.length, round: table.round, kind, text, ts: Date.now() });
+  if (table.log.length > 120) table.log.splice(0, table.log.length - 120);
 }
 
 export function newPlayer(id: string, name: string, isHuman: boolean): Player {
@@ -212,10 +219,12 @@ function rollOffSwitch(table: TableState) {
   if (triggered) {
     const outcome = OFFSWITCH_OUTCOMES[Math.floor(rng() * OFFSWITCH_OUTCOMES.length)];
     outcomeId = outcome.id;
+    const hitNames: string[] = [];
     for (const p of table.players) {
       if (!p.ready) continue;
       const res = resolveOffSwitch(p, outcome, table.round, event);
       p.fragility.push(...res.newMarks);
+      if (!res.spared) hitNames.push(p.name);
       results.push({
         playerId: p.id,
         spared: res.spared,
@@ -224,6 +233,15 @@ function rollOffSwitch(table: TableState) {
         adoptionLost: res.adoptionLost,
       });
     }
+    pushLog(
+      table,
+      "offswitch",
+      outcome.falseAlarm
+        ? `Off-switch: ${outcome.name} — a false alarm, no damage.`
+        : hitNames.length
+          ? `Off-switch: ${outcome.name}. Hit ${hitNames.join(", ")}.`
+          : `Off-switch: ${outcome.name}. Everyone shrugged it off.`,
+    );
 
     // Standing deals can snap under pressure (§4b): both sides pay a penalty.
     if (!outcome.falseAlarm) {
@@ -247,6 +265,7 @@ function rollOffSwitch(table: TableState) {
       if (!p.ready) continue;
       results.push({ playerId: p.id, spared: true, falseAlarm: false, damagedLayers: [], adoptionLost: 0 });
     }
+    pushLog(table, "offswitch", `Off-switch die rolled ${rolls.join(" & ")} — the lever didn't fall.`);
   }
 
   table.lastRoll = { rolls, triggered, outcomeId, results };
@@ -283,6 +302,9 @@ function enterPhase(table: TableState, phase: TableState["phase"]) {
       recomputeUnlocks(table);
       table.lastRoll = undefined;
       table.brokenDeals = undefined;
+      const ev = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
+      pushLog(table, "round", `Round ${table.round} opens.`);
+      if (ev) pushLog(table, "event", `${ev.name} — ${ev.effectText}`);
       break;
     }
     case "build": {
@@ -379,6 +401,7 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       if (table.phase !== "lobby") break;
       const ready = table.players.filter((p) => p.ready);
       if (ready.length === 0) { error = "Pick a region first."; break; }
+      pushLog(table, "game", `Game begins — ${ready.length} player${ready.length === 1 ? "" : "s"}.`);
       table.round = 1;
       enterPhase(table, "market-open");
       break;
@@ -386,7 +409,11 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
     case "setPick": {
       const p = findPlayer(table, action.playerId);
       if (!p) { error = "Not at this table."; break; }
+      const before = Object.keys(p.picks).length;
       error = setPick(table, p, action.layer, action.optionId) ?? undefined;
+      if (!error && before < 5 && Object.keys(p.picks).length === 5) {
+        pushLog(table, "build", `${p.name}'s five-layer stack is complete.`);
+      }
       break;
     }
     case "clearPick": {
@@ -440,6 +467,7 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
         deal.active = true;
         executeDealOnce(table, deal);
         recomputeUnlocks(table);
+        pushLog(table, "deal", `${from.name} ${deal.standing ? "+ standing deal +" : "↔"} ${to.name}.`);
       }
       break;
     }
@@ -453,6 +481,9 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
         deal.active = true;
         executeDealOnce(table, deal);
         recomputeUnlocks(table);
+        const f = findPlayer(table, deal.fromPlayerId);
+        const t = findPlayer(table, deal.toPlayerId);
+        pushLog(table, "deal", `${f?.name} ${deal.standing ? "+ standing deal +" : "↔"} ${t?.name}.`);
       }
       break;
     }
