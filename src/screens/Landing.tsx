@@ -1,10 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useGame } from "../store/useGame";
 import { CONFIG } from "../data/config";
 import { Question } from "../components/icons";
-
-// open the intro automatically once per browser session (no storage per spec)
-let introShown = false;
 
 const CODE_WORDS = ["OSLO", "PARIS", "DELFT", "NARVIK", "MUNICH", "LAGOS", "KYOTO", "TURIN"];
 function randomCode() {
@@ -20,12 +17,15 @@ export function Landing() {
   const [name, setName] = useState("");
   const [code, setCode] = useState(urlCode);
 
-  useEffect(() => {
-    if (!introShown && !urlCode) {
-      introShown = true;
-      toggleHowTo(true);
-    }
-  }, [toggleHowTo, urlCode]);
+  // The instruction manual opens when a player actually starts a game.
+  const playOnline = () => {
+    toggleHowTo(true);
+    joinOnline(code.trim(), name.trim() || "Player");
+  };
+  const playSolo = () => {
+    toggleHowTo(true);
+    startLocal(name.trim() || "You");
+  };
 
   return (
     <div className="landing">
@@ -62,7 +62,7 @@ export function Landing() {
             </div>
           </label>
           <div className="row gap-2" style={{ marginTop: "0.7rem" }}>
-            <button className="btn btn-go grow" disabled={!code.trim()} onClick={() => joinOnline(code.trim(), name.trim() || "Player")}>
+            <button className="btn btn-go grow" disabled={!code.trim()} onClick={playOnline}>
               {code.trim() ? "Join / host table" : "Enter a code"}
             </button>
           </div>
@@ -78,7 +78,7 @@ export function Landing() {
             <span>Your name</span>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Amara" maxLength={20} />
           </label>
-          <button className="btn btn-primary" style={{ marginTop: "0.7rem", width: "100%" }} onClick={() => startLocal(name.trim() || "You")}>
+          <button className="btn btn-primary" style={{ marginTop: "0.7rem", width: "100%" }} onClick={playSolo}>
             Start practice game
           </button>
         </section>
