@@ -3,7 +3,7 @@ import { useGame } from "../../store/useGame";
 import { REGION_BY_ID } from "../../data/regions";
 import { Term } from "../Term";
 import { credits } from "../util";
-import { Bank, Check, X } from "../icons";
+import { Bank, Check, X, Handshake } from "../icons";
 import { judgePitch, stackSummary, llmEnabled } from "../../net/llm";
 import { ASSET_LABEL, PRECOND_LABEL, summarizeDeal } from "../dealText";
 import type { DealKind, Precondition, AssetId, Deal } from "../../data/types";
@@ -52,6 +52,8 @@ export function TradePanel() {
     setKind(dealDraft.kind);
     if (dealDraft.precond) setPrecond(dealDraft.precond);
     if (dealDraft.assetId) setAssetId(dealDraft.assetId);
+    if (dealDraft.iPay != null) setIPay(dealDraft.iPay);
+    if (dealDraft.theyPay != null) setTheyPay(dealDraft.theyPay);
     setDealDraft(null); // consume once
   }, [dealDraft, setDealDraft]);
 
@@ -91,7 +93,31 @@ export function TradePanel() {
   const pending = myDeals.filter((d) => !d.active && !d.broken && !d.declined && ((d.toPlayerId === playerId && !d.confirmedTo) || (d.fromPlayerId === playerId && !d.confirmedFrom)));
   const active = table.deals.filter((d) => d.active && !d.broken);
 
+  // A pair of reciprocal standing deals between the same two players reads as a
+  // single "alliance" — bundle them so the board shows the partnership, not two
+  // disconnected auto-repeating favors.
+  const standingActive = active.filter((d) => d.standing);
+  const alliances: { a: string; b: string; legs: Deal[] }[] = [];
+  const inAlliance = new Set<string>();
+  for (let i = 0; i < standingActive.length; i++) {
+    for (let j = i + 1; j < standingActive.length; j++) {
+      const d1 = standingActive[i];
+      const d2 = standingActive[j];
+      const reciprocal = d1.fromPlayerId === d2.toPlayerId && d1.toPlayerId === d2.fromPlayerId;
+      if (reciprocal && !inAlliance.has(d1.id) && !inAlliance.has(d2.id)) {
+        alliances.push({ a: d1.fromPlayerId, b: d1.toPlayerId, legs: [d1, d2] });
+        inAlliance.add(d1.id);
+        inAlliance.add(d2.id);
+      }
+    }
+  }
+  const looseActive = active.filter((d) => !inAlliance.has(d.id));
+
   const dealSummary = (d: Deal) => summarizeDeal(d, table);
+  const playerLabel = (id: string) => {
+    const p = table.players.find((x) => x.id === id);
+    return `${REGION_BY_ID[p?.regionId ?? ""]?.flag ?? ""} ${p?.name ?? "—"}`.trim();
+  };
 
   return (
     <div className="stage-panel trade-view" aria-label="Deals">
@@ -101,7 +127,7 @@ export function TradePanel() {
         <div className="trade-left">
           <section className="propose card">
             <h3 className="tiny upper">Propose a deal</h3>
-            {others.length === 0 && <p className="tiny muted">No other players yet — a deal needs a partner. You can still pitch a VC below.</p>}
+            {others.length === 0 && <p className="tiny muted">No other players yet — a deal needs a partner. You can still pitch General Catalyst below.</p>}
             <label className="field"><span>With</span>
               <select value={toId} onChange={(e) => setToId(e.target.value)}>
                 {others.map((p) => <option key={p.id} value={p.id}>{REGION_BY_ID[p.regionId]?.flag} {p.name} — {REGION_BY_ID[p.regionId]?.name}</option>)}
@@ -167,30 +193,30 @@ export function TradePanel() {
 
             {me.actionThisRound && (
               <p className="tiny warn-text" style={{ margin: "0.5rem 0 0" }}>
-                You've used your action this round ({me.actionThisRound === "build" ? "built a layer" : me.actionThisRound === "deal" ? "proposed a deal" : me.pitch && !me.pitch.funded ? "VC pitch declined" : "raised capital"}). You can still accept offers below.
+                You've used your action this round ({me.actionThisRound === "build" ? "built a layer" : me.actionThisRound === "deal" ? "proposed a deal" : me.pitch && !me.pitch.funded ? "General Catalyst declined" : "raised capital"}). You can still accept offers below.
               </p>
             )}
             <button className="btn btn-go" style={{ width: "100%", marginTop: "0.5rem" }} onClick={propose} disabled={!toId || !!me.actionThisRound}>Propose →</button>
           </section>
 
           <section className="raise card">
-            <h3 className="tiny upper"><Bank size={14} /> Raise capital — pitch a VC</h3>
-            <p className="tiny muted">Two sentences on why to fund your stack. {llmEnabled() ? "A real VC reads your pitch — a sharp one can win funding even for a middling stack." : "The VC backs a coherent, defensible plan — and turns down a weak or over-exposed one."} <b className="warn-text">A pitch is your whole turn: get declined and you've burned the round.</b></p>
+            <h3 className="tiny upper"><Bank size={14} /> Raise capital — pitch General Catalyst</h3>
+            <p className="tiny muted">Two sentences on why to fund your stack. {llmEnabled() ? "General Catalyst reads your pitch — a sharp one can win funding even for a middling stack." : "General Catalyst backs a coherent, defensible plan — and turns down a weak or over-exposed one."} <b className="warn-text">A pitch is your whole turn: get declined and you've burned the round.</b></p>
             <textarea className="pitch-box" rows={3} maxLength={240} value={pitch} onChange={(e) => setPitch(e.target.value)} placeholder="In two sentences: what are you building, and why is it the one to back?" />
             {me.actionThisRound ? (
               <p className="tiny warn-text" style={{ margin: "0 0 0.4rem" }}>
-                You've already used your one action this round ({me.actionThisRound === "build" ? "built a layer" : me.actionThisRound === "deal" ? "proposed a deal" : me.pitch && !me.pitch.funded ? "VC pitch declined" : "raised capital"}). Pitching opens again next round — advance the table from the left rail.
+                You've already used your one action this round ({me.actionThisRound === "build" ? "built a layer" : me.actionThisRound === "deal" ? "proposed a deal" : me.pitch && !me.pitch.funded ? "General Catalyst declined" : "raised capital"}). Pitching opens again next round — advance the table from the left rail.
               </p>
             ) : pitch.trim().length < 12 ? (
               <p className="tiny muted" style={{ margin: "0 0 0.4rem" }}>Write at least a sentence ({pitch.trim().length}/12 characters) to pitch.</p>
             ) : null}
             <button className="btn btn-go" style={{ width: "100%" }} disabled={!!me.actionThisRound || pitch.trim().length < 12 || pitching} onClick={onPitch}>
-              {pitching ? "The VC is pondering…" : me.actionThisRound ? "Action already used this round" : "Pitch to the VC →"}
+              {pitching ? "General Catalyst is pondering…" : me.actionThisRound ? "Action already used this round" : "Pitch General Catalyst →"}
             </button>
             {pitching && (
               <div className="vc-pondering">
                 <span className="vc-dots"><i /><i /><i /></span>
-                <span>The VC reads your pitch, sizes up your stack…</span>
+                <span>General Catalyst reads your pitch, sizes up your stack…</span>
               </div>
             )}
             {!pitching && me.pitch && me.pitch.round === table.round && (
@@ -227,7 +253,21 @@ export function TradePanel() {
 
             <h3 className="tiny upper">Active deals ({active.length})</h3>
             {active.length === 0 && <p className="tiny muted">No deals yet. Find what others need and fill a real gap — that scores most.</p>}
-            {active.map((d) => (
+            {alliances.map((al) => {
+              const mine = al.a === playerId || al.b === playerId;
+              return (
+                <div key={`al-${al.legs[0].id}`} className="deal-row card alliance">
+                  <div className="grow">
+                    <div className="deal-sum tiny"><Handshake size={13} /> Alliance · {playerLabel(al.a)} ↔ {playerLabel(al.b)}</div>
+                    {al.legs.map((l) => <div key={l.id} className="tiny muted">↻ {dealSummary(l)}</div>)}
+                  </div>
+                  {mine && (
+                    <button className="btn btn-sm btn-ghost" onClick={() => al.legs.forEach((l) => dispatch({ type: "cancelDeal", playerId, dealId: l.id }))}>dissolve</button>
+                  )}
+                </div>
+              );
+            })}
+            {looseActive.map((d) => (
               <div key={d.id} className={`deal-row card ${d.standing ? "standing" : ""}`}>
                 <div className="grow">
                   <div className="deal-sum tiny">{dealSummary(d)}</div>

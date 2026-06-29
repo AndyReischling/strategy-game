@@ -232,6 +232,8 @@ input[type="number"] { font-family: var(--font-mono); }
 .deal-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.7rem; }
 .deal-row.standing { box-shadow: inset 0 0 0 3px var(--green), var(--shadow-soft); }
 .deal-row.pending { box-shadow: inset 0 0 0 3px var(--yellow), var(--shadow-soft); }
+.deal-row.alliance { box-shadow: inset 0 0 0 3px var(--violet), var(--shadow-soft); flex-direction: row; align-items: flex-start; }
+.deal-row.alliance .deal-sum { display: inline-flex; align-items: center; gap: 0.3rem; }
 .deal-sum { font-weight: 700; }
 
 /* ── Event / off-switch overlays ────────────────────────── */
@@ -478,6 +480,7 @@ button.stack-block { cursor: pointer; }
 .oc-fix { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem; padding: 0.45rem 0.5rem; border: 2px dashed var(--ink); border-radius: var(--radius); background: var(--cream); }
 .oc-fix-text { line-height: 1.35; }
 .oc-fix-btn { align-self: flex-start; }
+.oc-fix.oc-cofund { border-color: var(--violet); }
 .oc-action { margin-top: 0.4rem; }
 
 /* Rivals */

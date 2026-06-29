@@ -48,7 +48,7 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
       : me.actionThisRound === "deal"
         ? <>you struck a deal</>
         : me.pitch && !me.pitch.funded
-          ? <>your VC pitch was declined — turn burned</>
+          ? <>your pitch to General Catalyst was declined — turn burned</>
           : <>you raised capital</>;
 
   const buy = (opt: LayerOption) => dispatch({ type: "setPick", playerId, layer: opt.layer, optionId: opt.id });
@@ -112,6 +112,28 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
                   <div className="warn-text"><b>Locked</b> — needs {check.needs}.</div>
                   {check.dealable && (() => {
                     const req = opt.requires;
+                    // Co-funded builds: any player can commit as a partner, and the
+                    // cost is split — invite someone to cover part of it.
+                    if (req === "co-funder-1" || req === "co-funders-2") {
+                      const share = Math.max(1, Math.round(price.cost / 2));
+                      const partner = others[0];
+                      const inviteCoFund = () =>
+                        setDealDraft({ toId: partner?.id, kind: "access", precond: req, theyPay: share });
+                      return (
+                        <div className="oc-fix oc-cofund">
+                          <span className="oc-fix-text">
+                            {others.length > 0
+                              ? <><b>Co-funded build.</b> Split the {credits(price.cost)} cost — invite a partner to co-fund and they cover {credits(share)}. Once the deal is live, this unlocks.</>
+                              : <><b>Co-funded build.</b> Needs a partner to co-fund — no one else is at the table yet.</>}
+                          </span>
+                          {partner && (
+                            <button type="button" className="btn btn-sm btn-go oc-fix-btn" onClick={inviteCoFund}>
+                              Invite a partner to co-fund <ArrowRight size={13} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    }
                     const granters = others.filter((p) => playerCanGrant(p, req));
                     const isAsmlAsset = req === "asml-token";
                     const partner = granters[0] ?? others[0];

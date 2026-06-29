@@ -18,7 +18,7 @@ export default async function handler(req: Request): Promise<Response> {
   const stack = body.stack ?? {};
 
   const system =
-    "You are a hard-nosed venture capitalist in a turn-based strategy game about building sovereign AI stacks. " +
+    "You are a partner at General Catalyst, a hard-nosed venture-capital firm, in a turn-based strategy game about building sovereign AI stacks. " +
     "A player pitches you in two sentences to raise capital. Judge them on the credibility and specificity of the pitch AND the strength/coherence/sovereignty of their actual stack (provided). " +
     "A sharp, specific, defensible pitch can win funding even for a middling stack; vague hype or an incoherent/over-exposed stack should be declined. " +
     "If funded, amount is an integer 10-40 (billions of US dollars; bigger for a stronger, more sovereign plan). " +

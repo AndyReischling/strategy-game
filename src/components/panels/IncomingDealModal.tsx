@@ -29,6 +29,13 @@ export function IncomingDealModal() {
   const other = table.players.find((p) => p.id === otherId);
   const region = other ? REGION_BY_ID[other.regionId] : undefined;
   const countered = (d.counters ?? 0) > 0;
+  // Accepting a standing deal that mirrors an existing one forms a two-way alliance.
+  const formsAlliance =
+    d.standing &&
+    table.deals.some(
+      (o) => o.id !== d.id && o.active && !o.broken && o.standing &&
+        o.fromPlayerId === d.toPlayerId && o.toPlayerId === d.fromPlayerId,
+    );
 
   const sendCounter = () => {
     // translate "you pay / they pay" into creditsFromTo (from-pays-to, in $B)
@@ -44,6 +51,7 @@ export function IncomingDealModal() {
         <h2 className="event-name">{region?.flag} {other?.name} {countered ? "countered" : "wants a deal"}</h2>
         <p className="incoming-terms">{summarizeDeal(d, table)}</p>
         <p className="tiny muted">{d.standing ? "Standing deal — it repeats every round until it breaks." : "One-off deal, this round only."}</p>
+        {formsAlliance && <p className="tiny good-text"><Handshake size={13} /> Accepting forms a standing alliance with {other?.name}.</p>}
 
         {!countering ? (
           <>

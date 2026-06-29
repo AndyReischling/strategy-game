@@ -48,9 +48,10 @@ export function HowToPlay() {
             <div className="howto-kicker mono upper tiny">How to play · 1 of {pages}</div>
             <h2 className="howto-title">The big idea</h2>
             <p className="howto-lead">
-              A giant American AI (think ChatGPT) is already the best in the world. You <b>can't</b> beat it at being
-              the smartest. So you beat it a different way: build the AI <b>the most people actually use</b> — and
-              that <b>can't be <Term id="off-switch">switched off</Term></b> by anyone else.
+              We already know that there are big American technology companies that have cornered the market for
+              AI infrastructure. This has caused real problems for middle power nations' sovereignty given their
+              reliance on American technology and soft power. This game reimagines what a reconstituted coalition
+              could look like: how would you build a competitor to the biggest companies on Earth?
             </p>
             <p className="howto-lead">
               You play a country or region. <b>Everyone starts with the same money.</b> What's different is what your
@@ -64,7 +65,7 @@ export function HowToPlay() {
               <ArrowRight size={20} className="loop-arrow" />
               <div className="loop-step"><span className="loop-ico"><Power size={26} /></span><b>Watch</b><span className="tiny">the dice test your shortcuts</span></div>
             </div>
-            <p className="tiny muted">Each round you take <b>one action</b>: buy a piece of infrastructure, pitch a VC for capital (two sentences — and a no <i>burns your turn</i>), or strike a deal with another player. (Accepting an offer someone sends you is always free.) Then the round ends, an event hits, and round 2 begins — your stack and coalition come together over {CONFIG.totalRounds} rounds. Plenty of moves to build all five layers <i>and</i> cut deals — build the layers in any order you like.</p>
+            <p className="tiny muted">Each round you take <b>one action</b>: buy a piece of infrastructure, pitch General Catalyst for capital (two sentences — and a no <i>burns your turn</i>), or strike a deal with another player. (Accepting an offer someone sends you is always free.) Then the round ends, an event hits, and round 2 begins — your stack and coalition come together over {CONFIG.totalRounds} rounds. Plenty of moves to build all five layers <i>and</i> cut deals — build the layers in any order you like.</p>
           </div>
         )}
 

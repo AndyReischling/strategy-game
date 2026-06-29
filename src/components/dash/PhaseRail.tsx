@@ -47,7 +47,7 @@ export function PhaseRail() {
       )}
 
       <p className="pr-hint tiny">
-        Take your <b>one action</b> this round — build a layer, strike a deal, or pitch a VC — anywhere across your stack. When everyone's moved, the round ends: the <Term id="off-switch">off-switch</Term> dice roll and scores update.
+        Take your <b>one action</b> this round — build a layer, strike a deal, or pitch General Catalyst — anywhere across your stack. When everyone's moved, the round ends: the <Term id="off-switch">off-switch</Term> dice roll and scores update.
       </p>
 
       {ready.length > 0 && (

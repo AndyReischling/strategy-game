@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useGame } from "../store/useGame";
 import { CONFIG } from "../data/config";
-import { Term } from "../components/Term";
 import { Question } from "../components/icons";
 
 // open the intro automatically once per browser session (no storage per spec)
@@ -38,10 +37,11 @@ export function Landing() {
           Sovereign<br />Stack
         </h1>
         <p className="hero-sub">
-          A giant American AI already wins on raw capability. You win differently — build the AI the
-          world actually <Term id="adoption">uses</Term>, and that can't be{" "}
-          <Term id="off-switch">switched off</Term>. Pick a region, build your{" "}
-          five-layer stack, and survive at the negotiation table.
+          We already know that there are big American technology companies that have cornered the
+          market for AI infrastructure. This has caused real problems for middle power nations'
+          sovereignty given their reliance on American technology and soft power. This game
+          reimagines what a reconstituted coalition could look like: how would you build a
+          competitor to the biggest companies on Earth?
         </p>
       </header>
 
@@ -85,7 +85,6 @@ export function Landing() {
 
       <footer className="landing-foot tiny mono">
         <span>Adoption × Coherence × Sovereignty + Deals.</span>
-        <span>The real adversary isn't the incumbent — it's coordination cost and nerve.</span>
       </footer>
     </div>
   );

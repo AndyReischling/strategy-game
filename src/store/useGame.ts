@@ -52,7 +52,7 @@ interface GameStore {
   inspectPlayerId: string | null;
   inspectOpen: boolean;
   // a pre-filled deal request (e.g. from a blocked build) that jumps to Deals
-  dealDraft: { toId?: string; kind: DealKind; precond?: Precondition; assetId?: AssetId } | null;
+  dealDraft: { toId?: string; kind: DealKind; precond?: Precondition; assetId?: AssetId; iPay?: number; theyPay?: number } | null;
   showGlossary: boolean;
   showLeaderboard: boolean;
   showHowTo: boolean;

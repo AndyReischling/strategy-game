@@ -161,8 +161,14 @@ function recomputeUnlocks(table: TableState) {
   for (const p of table.players) {
     const unlocks = new Set<Player["unlocks"][number]>();
     for (const d of activeDeals(table)) {
-      if (d.toPlayerId === p.id && d.terms.grantsPrecondition) {
-        unlocks.add(d.terms.grantsPrecondition);
+      const gp = d.terms.grantsPrecondition;
+      if (!gp) continue;
+      // Normal access grants land on the recipient.
+      if (d.toPlayerId === p.id) unlocks.add(gp);
+      // Co-funding is a mutual commitment: both partners count as committed,
+      // so the builder who proposes the deal is unlocked too.
+      if ((gp === "co-funder-1" || gp === "co-funders-2") && d.fromPlayerId === p.id) {
+        unlocks.add(gp);
       }
     }
     p.unlocks = Array.from(unlocks);
@@ -619,7 +625,7 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       }
       if (p.actionThisRound) { error = "One action per round — you've already acted this round."; break; }
       const pitch = (action.pitch ?? "").trim();
-      if (pitch.length < MIN_PITCH_LEN) { error = "Give the VC a real pitch — two sentences on why to fund your stack."; break; }
+      if (pitch.length < MIN_PITCH_LEN) { error = "Give General Catalyst a real pitch — two sentences on why to fund your stack."; break; }
 
       const verdict = evaluatePitch(p);
       p.pitch = { text: pitch, funded: verdict.funded, amount: verdict.amount, reason: verdict.reason, round: table.round };
@@ -628,9 +634,9 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       if (verdict.funded) {
         p.credits += verdict.amount;
         p.raisesUsed += 1;
-        pushLog(table, "deal", `${p.name} raised $${verdict.amount}B from a VC.`);
+        pushLog(table, "deal", `${p.name} raised $${verdict.amount}B from General Catalyst.`);
       } else {
-        pushLog(table, "deal", `${p.name} pitched a VC — declined. Turn burned.`);
+        pushLog(table, "deal", `${p.name} pitched General Catalyst — declined. Turn burned.`);
       }
       break;
     }
@@ -645,7 +651,7 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       }
       if (p.actionThisRound) { error = "One action per round — you've already acted this round."; break; }
       const pitch = (action.pitch ?? "").trim();
-      if (pitch.length < MIN_PITCH_LEN) { error = "Give the VC a real pitch — two sentences."; break; }
+      if (pitch.length < MIN_PITCH_LEN) { error = "Give General Catalyst a real pitch — two sentences."; break; }
 
       const floor = pitchHardFloor(p);
       let funded = action.funded;
@@ -659,9 +665,9 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       if (funded) {
         p.credits += amount;
         p.raisesUsed += 1;
-        pushLog(table, "deal", `${p.name} raised $${amount}B from a VC.`);
+        pushLog(table, "deal", `${p.name} raised $${amount}B from General Catalyst.`);
       } else {
-        pushLog(table, "deal", `${p.name} pitched a VC — declined. Turn burned.`);
+        pushLog(table, "deal", `${p.name} pitched General Catalyst — declined. Turn burned.`);
       }
       break;
     }
