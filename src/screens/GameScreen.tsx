@@ -11,10 +11,9 @@ import { ScorePanel } from "../components/panels/ScorePanel";
 import { EventCard } from "../components/panels/EventCard";
 import { OffSwitchOverlay } from "../components/panels/OffSwitchOverlay";
 import { LeaderboardPanel } from "../components/panels/LeaderboardPanel";
-import { MapOverlay } from "../components/board/MapOverlay";
 import { FinalScreen } from "./FinalScreen";
 import { credits } from "../components/util";
-import { Hammer, Handshake, ChartBar, Trophy, Question, Coins, MapTrifold, X } from "../components/icons";
+import { Hammer, Handshake, ChartBar, Trophy, Question, Coins, X } from "../components/icons";
 import type { LayerId } from "../data/types";
 
 type Tab = "build" | "trade" | "score";
@@ -28,7 +27,6 @@ export function GameScreen() {
   const leave = useGame((s) => s.leave);
   const [tab, setTab] = useState<Tab>("build");
   const [layer, setLayer] = useState<LayerId>("chips");
-  const [showMap, setShowMap] = useState(false);
 
   const me = table.players.find((p) => p.id === playerId);
 
@@ -54,7 +52,6 @@ export function GameScreen() {
             <span className="tnum">{credits(me.credits)}</span>
           </div>
         )}
-        <button className="btn btn-sm" onClick={() => setShowMap(true)}><MapTrifold size={15} /> World</button>
         <button className="btn btn-sm" onClick={() => toggleLeaderboard(true)}><Trophy size={15} /> Ranks</button>
         <button className="btn btn-sm" onClick={() => toggleGlossary(true)}><Question size={15} /> Glossary</button>
         <button className="btn btn-sm btn-ghost" onClick={leave}><X size={15} /></button>
@@ -108,7 +105,6 @@ export function GameScreen() {
 
       {table.phase === "world-event" && <EventCard />}
       {table.phase === "off-switch" && <OffSwitchOverlay />}
-      {showMap && <MapOverlay onClose={() => setShowMap(false)} />}
       {showLeaderboard && <LeaderboardPanel />}
     </div>
   );

@@ -78,7 +78,7 @@ export function TradePanel() {
 
   return (
     <div className="stage-panel trade-view" aria-label="Deals">
-      <p className="tiny muted" style={{ marginTop: 0 }}>Bilateral trades. Both sides confirm; the app moves Credits, assets & unlocks, and draws a road on the world map. <Term id="standing-deal">Standing deals</Term> pulse — and can break.</p>
+      <p className="tiny muted" style={{ marginTop: 0 }}>Bilateral trades. Both sides confirm; the app moves Credits, assets & unlocks. <Term id="standing-deal">Standing deals</Term> auto-repeat — and can break under pressure.</p>
 
       {others.length === 0 ? (
         <p className="muted">No one else at the table yet. Deals need a partner.</p>
