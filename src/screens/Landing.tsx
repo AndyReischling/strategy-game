@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGame } from "../store/useGame";
 import { Term } from "../components/Term";
+import { Question } from "../components/icons";
+
+// open the intro automatically once per browser session (no storage per spec)
+let introShown = false;
 
 const CODE_WORDS = ["OSLO", "PARIS", "DELFT", "NARVIK", "MUNICH", "LAGOS", "KYOTO", "TURIN"];
 function randomCode() {
@@ -11,13 +15,22 @@ function randomCode() {
 export function Landing() {
   const joinOnline = useGame((s) => s.joinOnline);
   const startLocal = useGame((s) => s.startLocal);
+  const toggleHowTo = useGame((s) => s.toggleHowTo);
   const urlCode = new URLSearchParams(location.search).get("code") ?? "";
   const [name, setName] = useState("");
   const [code, setCode] = useState(urlCode);
 
+  useEffect(() => {
+    if (!introShown && !urlCode) {
+      introShown = true;
+      toggleHowTo(true);
+    }
+  }, [toggleHowTo, urlCode]);
+
   return (
     <div className="landing">
       <div className="landing-grain halftone" aria-hidden />
+      <button className="landing-help btn btn-sm" onClick={() => toggleHowTo(true)}><Question size={15} /> How to play</button>
       <header className="landing-hero">
         <div className="hero-kicker mono upper">A turn-based strategy game · up to 6 per table · ~1 hour</div>
         <h1 className="hero-title">

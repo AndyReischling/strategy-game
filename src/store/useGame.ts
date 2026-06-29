@@ -50,11 +50,13 @@ interface GameStore {
   inspectPlayerId: string | null;
   showGlossary: boolean;
   showLeaderboard: boolean;
+  showHowTo: boolean;
 
   setSelectedLayer: (l: LayerId | null) => void;
   setInspect: (id: string | null) => void;
   toggleGlossary: (v?: boolean) => void;
   toggleLeaderboard: (v?: boolean) => void;
+  toggleHowTo: (v?: boolean) => void;
   setNotice: (msg: string | null) => void;
 
   joinOnline: (code: string, name: string) => void;
@@ -80,11 +82,13 @@ export const useGame = create<GameStore>((set, get) => ({
   inspectPlayerId: null,
   showGlossary: false,
   showLeaderboard: false,
+  showHowTo: false,
 
   setSelectedLayer: (l) => set({ selectedLayer: l }),
   setInspect: (id) => set({ inspectPlayerId: id }),
   toggleGlossary: (v) => set((s) => ({ showGlossary: v ?? !s.showGlossary })),
   toggleLeaderboard: (v) => set((s) => ({ showLeaderboard: v ?? !s.showLeaderboard })),
+  toggleHowTo: (v) => set((s) => ({ showHowTo: v ?? !s.showHowTo })),
   setNotice: (msg) => {
     set({ notice: msg });
     if (noticeTimer) clearTimeout(noticeTimer);

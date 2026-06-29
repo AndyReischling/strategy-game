@@ -2,6 +2,7 @@ import { useGame } from "../store/useGame";
 import { REGIONS } from "../data/regions";
 import { credits } from "../components/util";
 import { CONFIG } from "../data/config";
+import { Question } from "../components/icons";
 
 export function Lobby() {
   const table = useGame((s) => s.table)!;
@@ -10,6 +11,7 @@ export function Lobby() {
   const dispatch = useGame((s) => s.dispatch);
   const leave = useGame((s) => s.leave);
 
+  const toggleHowTo = useGame((s) => s.toggleHowTo);
   const me = table.players.find((p) => p.id === playerId);
   const isHost = table.hostId === playerId || transport === "local";
   const takenBy = (regionId: string) => table.players.find((p) => p.regionId === regionId);
@@ -34,6 +36,7 @@ export function Lobby() {
             {table.players.length === 0 && <span className="tiny muted">No one yet.</span>}
           </div>
         </div>
+        <button className="btn btn-sm" onClick={() => toggleHowTo(true)}><Question size={14} /> How to play</button>
         <button className="btn btn-sm btn-ghost" onClick={leave}>← Leave</button>
       </div>
 

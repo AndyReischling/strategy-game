@@ -5,6 +5,7 @@ import { Lobby } from "./screens/Lobby";
 import { GameScreen } from "./screens/GameScreen";
 import { Toast } from "./components/Toast";
 import { GlossaryDrawer } from "./components/GlossaryDrawer";
+import { HowToPlay } from "./components/HowToPlay";
 
 export function App() {
   const transport = useGame((s) => s.transport);
@@ -29,6 +30,7 @@ export function App() {
       {screen}
       <Toast />
       <GlossaryDrawer />
+      <HowToPlay />
     </>
   );
 }

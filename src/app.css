@@ -375,6 +375,43 @@ button.stack-block { cursor: pointer; }
 .map-overlay-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.9rem; border-bottom: var(--outline) solid var(--ink); background: var(--cream-deep); }
 .map-overlay-board { position: relative; flex: 1; }
 
+/* ═══════════ HOW TO PLAY (intro / tutorial) ═══════════ */
+.landing-help { position: absolute; top: 1rem; right: 1rem; z-index: 5; }
+.howto-backdrop { position: fixed; inset: 0; z-index: 200; background: rgba(26,26,24,0.55); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 1rem; animation: fade 0.2s; }
+.howto { position: relative; width: min(620px, 100%); max-height: 90vh; overflow-y: auto; padding: 1.4rem 1.5rem; --spot: var(--yellow); }
+.howto-x { position: absolute; top: 0.7rem; right: 0.7rem; }
+.howto-kicker { letter-spacing: 0.12em; opacity: 0.6; }
+.howto-title { font-size: clamp(2rem, 6vw, 2.8rem); margin: 0.3rem 0 0.8rem; }
+.howto-lead { font-size: 1rem; line-height: 1.5; font-weight: 500; margin: 0.5rem 0; }
+.howto-page { min-height: 340px; }
+
+.howto-loop { display: flex; align-items: stretch; gap: 0.5rem; margin: 1.2rem 0; }
+.loop-step { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.2rem; border: var(--outline) solid var(--ink); border-radius: var(--radius); padding: 0.7rem 0.4rem; background: var(--cream); box-shadow: var(--shadow-soft); }
+.loop-step b { font-family: var(--font-display); text-transform: uppercase; font-size: 1.1rem; }
+.loop-ico { display: inline-flex; width: 2.6rem; height: 2.6rem; align-items: center; justify-content: center; background: var(--yellow); border: 2px solid var(--ink); border-radius: 999px; }
+.loop-arrow { align-self: center; flex: none; opacity: 0.6; }
+
+.howto-steps { list-style: none; margin: 0.8rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.howto-step { display: flex; align-items: center; gap: 0.6rem; border: 2px solid var(--ink); border-radius: var(--radius); padding: 0.5rem 0.6rem; background: var(--cream); box-shadow: var(--shadow-soft); }
+.hs-num { font-size: 1.2rem; opacity: 0.5; width: 1.2rem; text-align: center; flex: none; }
+.hs-ico { display: inline-flex; width: 2.4rem; height: 2.4rem; align-items: center; justify-content: center; background: var(--blue); color: var(--cream); border: 2px solid var(--ink); border-radius: var(--radius); flex: none; }
+.hs-body { display: flex; flex-direction: column; }
+.hs-head { font-family: var(--font-display); text-transform: uppercase; font-size: 1.05rem; }
+.hs-analogy { color: var(--orange); }
+.hs-line { line-height: 1.3; opacity: 0.85; }
+
+.howto-win { list-style: none; margin: 0.6rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+.howto-win li { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.92rem; line-height: 1.35; }
+.howto-win li svg { flex: none; margin-top: 0.1rem; }
+.howto-rule { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.7rem 0.8rem; margin: 0.9rem 0 0.6rem; --spot: var(--orange); }
+.howto-rule svg { flex: none; margin-top: 0.15rem; color: var(--orange); }
+.howto-rule p { margin: 0; font-size: 0.9rem; line-height: 1.4; }
+
+.howto-nav { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 1.2rem; border-top: 2px dotted var(--ink); padding-top: 0.9rem; }
+.howto-dots { display: flex; gap: 0.4rem; }
+.howto-dot { width: 0.7rem; height: 0.7rem; border-radius: 999px; border: 2px solid var(--ink); background: var(--cream); padding: 0; }
+.howto-dot.on { background: var(--ink); }
+
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 1080px) {
   .dash-body { grid-template-columns: 240px 1fr; }
