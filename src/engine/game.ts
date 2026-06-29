@@ -105,20 +105,34 @@ export function newPlayer(id: string, name: string, isHuman: boolean): Player {
 const MIN_PITCH_LEN = 12;
 const MAX_RAISES = 2;
 
-export function evaluatePitch(player: Player): { funded: boolean; amount: number; reason: string } {
-  const picks = (Object.values(player.picks).filter(Boolean) as string[])
+function pickedFor(player: Player) {
+  return (Object.values(player.picks).filter(Boolean) as string[])
     .map((id) => OPTION_BY_ID[id])
     .filter(Boolean);
+}
 
-  // Gulf SWF is the financier — its own capital is effectively bottomless.
+/** Non-negotiable reasons the VC walks regardless of how good the pitch is. */
+function pitchHardFloor(player: Player): string | null {
   if (player.regionId === "gulf-swf") {
-    if (player.raisesUsed >= MAX_RAISES + 1) return { funded: false, amount: 0, reason: "Even sovereign wealth wants to see it deployed — back a partner first." };
-    return { funded: true, amount: 6, reason: "Sovereign-wealth backing — the capital is already yours to direct." };
+    return player.raisesUsed >= MAX_RAISES + 1
+      ? "Even sovereign wealth wants to see it deployed — back a partner first."
+      : null;
   }
+  if (pickedFor(player).length < 2)
+    return "You've barely begun. Build more of your stack before asking for money.";
+  if (player.raisesUsed >= MAX_RAISES)
+    return "You've raised twice already — investors want to see returns before the next round.";
+  return null;
+}
 
-  if (picks.length < 2) return { funded: false, amount: 0, reason: "You've barely begun. Build more of your stack before asking for money." };
-  if (player.raisesUsed >= MAX_RAISES) return { funded: false, amount: 0, reason: "You've raised twice already — investors want to see returns before the next round." };
+export function evaluatePitch(player: Player): { funded: boolean; amount: number; reason: string } {
+  const floor = pitchHardFloor(player);
+  if (floor) return { funded: false, amount: 0, reason: floor };
 
+  if (player.regionId === "gulf-swf")
+    return { funded: true, amount: 6, reason: "Sovereign-wealth backing — the capital is already yours to direct." };
+
+  const picks = pickedFor(player);
   const sov = computeSovereignty(picks);
   const coh = computeCoherence(picks).multiplier;
 
@@ -526,6 +540,41 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       } else {
         pushLog(table, "deal", `${p.name} pitched a VC — declined. Turn burned.`);
       }
+      break;
+    }
+    case "resolvePitch": {
+      // LLM verdict from /api/pitch, re-validated by the engine so the model can
+      // sway the believable middle but never break the hard rules.
+      const p = findPlayer(table, action.playerId);
+      if (!p) break;
+      if (table.phase !== "build" && table.phase !== "trade" && table.phase !== "market-open") {
+        error = "You can pitch during the build & trade phases.";
+        break;
+      }
+      if (p.actionThisRound) { error = "One action per round — you've already acted this round."; break; }
+      const pitch = (action.pitch ?? "").trim();
+      if (pitch.length < MIN_PITCH_LEN) { error = "Give the VC a real pitch — two sentences."; break; }
+
+      const floor = pitchHardFloor(p);
+      let funded = action.funded;
+      let amount = Math.round(action.amount);
+      let reason = action.reason?.trim() || (funded ? "Funded." : "Declined.");
+      if (floor) { funded = false; amount = 0; reason = floor; } // hard floors override the model
+      amount = funded ? Math.max(3, Math.min(8, amount)) : 0; // clamp into the legal band
+
+      p.pitch = { text: pitch, funded, amount, reason, round: table.round };
+      p.actionThisRound = "capital";
+      if (funded) {
+        p.credits += amount;
+        p.raisesUsed += 1;
+        pushLog(table, "deal", `${p.name} raised §${amount} from a VC.`);
+      } else {
+        pushLog(table, "deal", `${p.name} pitched a VC — declined. Turn burned.`);
+      }
+      break;
+    }
+    case "setEventFlavor": {
+      table.eventFlavor = { ...(table.eventFlavor ?? {}), ...action.flavor };
       break;
     }
     case "proposeDeal": {

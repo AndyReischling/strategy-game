@@ -4,6 +4,7 @@ import { REGION_BY_ID } from "../../data/regions";
 import { Term } from "../Term";
 import { credits } from "../util";
 import { Bank, Check, X } from "../icons";
+import { judgePitch, stackSummary, llmEnabled } from "../../net/llm";
 import type { DealKind, Precondition, AssetId, Deal } from "../../data/types";
 
 const ASSET_LABEL: Record<string, string> = {
@@ -43,6 +44,7 @@ export function TradePanel() {
   const [standing, setStanding] = useState(false);
   const [investorCut, setInvestorCut] = useState(0);
   const [pitch, setPitch] = useState("");
+  const [pitching, setPitching] = useState(false);
 
   if (!me) return null;
   const to = table.players.find((p) => p.id === toId);
@@ -59,6 +61,21 @@ export function TradePanel() {
     if (standing && investorCut > 0) { terms.investorCut = investorCut / 100; }
     dispatch({ type: "proposeDeal", playerId, toPlayerId: toId, kind, terms, standing: standing || kind === "standing" });
     setIPay(0); setTheyPay(0); setAssetId(""); setInvestorCut(0);
+  };
+
+  const onPitch = async () => {
+    if (pitching || !me) return;
+    setPitching(true);
+    try {
+      const verdict = await judgePitch(pitch, stackSummary(me)); // Claude, if enabled
+      if (verdict) {
+        dispatch({ type: "resolvePitch", playerId, pitch, funded: verdict.funded, amount: verdict.amount, reason: verdict.reason });
+      } else {
+        dispatch({ type: "pitchVC", playerId, pitch }); // deterministic fallback
+      }
+    } finally {
+      setPitching(false);
+    }
   };
 
   const myDeals = table.deals.filter((d) => d.fromPlayerId === playerId || d.toPlayerId === playerId);
@@ -143,10 +160,10 @@ export function TradePanel() {
 
           <section className="raise card">
             <h3 className="tiny upper"><Bank size={14} /> Raise capital — pitch a VC</h3>
-            <p className="tiny muted">Two sentences on why to fund your stack. The VC backs a coherent, defensible plan — and turns down a weak or over-exposed one. <b className="warn-text">A pitch is your whole turn: get declined and you've burned the round.</b></p>
+            <p className="tiny muted">Two sentences on why to fund your stack. {llmEnabled() ? "A real VC reads your pitch — a sharp one can win funding even for a middling stack." : "The VC backs a coherent, defensible plan — and turns down a weak or over-exposed one."} <b className="warn-text">A pitch is your whole turn: get declined and you've burned the round.</b></p>
             <textarea className="pitch-box" rows={3} maxLength={240} value={pitch} onChange={(e) => setPitch(e.target.value)} placeholder="In two sentences: what are you building, and why is it the one to back?" />
-            <button className="btn btn-go" style={{ width: "100%" }} disabled={!!me.actionThisRound || pitch.trim().length < 12} onClick={() => dispatch({ type: "pitchVC", playerId, pitch })}>
-              Pitch to the VC →
+            <button className="btn btn-go" style={{ width: "100%" }} disabled={!!me.actionThisRound || pitch.trim().length < 12 || pitching} onClick={onPitch}>
+              {pitching ? "Pitching…" : "Pitch to the VC →"}
             </button>
             {me.pitch && me.pitch.round === table.round && (
               <div className={`pitch-result ${me.pitch.funded ? "funded" : "declined"}`}>

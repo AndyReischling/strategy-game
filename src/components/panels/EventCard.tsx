@@ -9,16 +9,21 @@ export function EventCard() {
   const [dismissed, setDismissed] = useState(false);
   const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
   if (!event || dismissed) return null;
+  // LLM-generated, real-world-grounded flavor (mechanics unchanged) if present
+  const fx = table.eventId ? table.eventFlavor?.[table.eventId] : undefined;
+  const name = fx?.name || event.name;
+  const flavor = fx?.flavor || event.flavor;
+  const effectText = fx?.effectText || event.effectText;
   return (
     <div className="event-overlay">
       <div className="event-card card offset c-orange">
         <button className="event-x btn btn-sm btn-ghost" onClick={() => setDismissed(true)} aria-label="Dismiss"><X size={16} /></button>
-        <div className="event-kicker mono upper tiny">Round {table.round} · World event</div>
-        <h2 className="event-name">{event.name}</h2>
-        <p className="event-flavor">“{event.flavor}”</p>
+        <div className="event-kicker mono upper tiny">Round {table.round} · World event{fx ? " · live" : ""}</div>
+        <h2 className="event-name">{name}</h2>
+        <p className="event-flavor">“{flavor}”</p>
         <div className="event-effect">
           <span className="tag warn">Effect</span>
-          <p>{event.effectText}</p>
+          <p>{effectText}</p>
         </div>
         {event.terms && (
           <div className="row wrap gap-1 event-terms">

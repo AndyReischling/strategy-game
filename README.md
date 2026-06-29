@@ -85,6 +85,36 @@ server/        authoritative realtime server
 scripts/       smoke.ts (end-to-end multiplayer test) · shots.mjs (screenshots)
 ```
 
+## Optional: Claude-powered VC pitches + live world events
+
+Two features light up when an Anthropic key is present (they degrade gracefully
+to the deterministic engine when it isn't, so the game always works):
+
+- **VC pitch judge** — `/api/pitch` sends the player's two-sentence pitch + a
+  summary of their stack to Claude; a sharp, specific pitch can win funding even
+  for a middling stack. The **engine re-validates** the verdict (hard floors:
+  too early / raise cap; amount clamped to 3–8), so the model sways the middle
+  but can't be jailbroken into infinite money.
+- **Live world events** — `/api/events` rewrites each round's card with fresh
+  flavor grounded in real recent AI-sovereignty developments (web search), while
+  keeping the **mechanical effect identical** so balance/fairness hold.
+
+Both are **Vercel Edge functions** in `api/` — the key stays server-side.
+
+Setup (Vercel → Settings → Environment Variables):
+
+| Variable | Scope | Value |
+|---|---|---|
+| `VITE_LLM_ENABLED` | client (build-time) | `true` |
+| `ANTHROPIC_API_KEY` | server only | `sk-ant-…` |
+| `ANTHROPIC_MODEL` | server only (optional) | e.g. `claude-sonnet-4-5` |
+
+> `ANTHROPIC_API_KEY` has **no `VITE_` prefix** — it's never shipped to the browser.
+> If web search isn't available for your model, the events call falls back to
+> plain generation automatically. To test the functions locally, use `vercel dev`
+> (plain `npm run dev` doesn't run the `api/` functions, so the client just uses
+> the deterministic VC).
+
 ## Tuning
 
 Every number lives in `src/data/`. The headline balance lever is `src/data/config.ts` (budget, dice trigger, scoring multipliers). Option costs / adoption / sovereignty are in `src/data/layers.ts`; region discounts in `src/data/regions.ts`; events in `src/data/events.ts`.

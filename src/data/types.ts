@@ -342,6 +342,8 @@ export interface TableState {
   /** seed used to draw the event deck — shared across tables in one event so
    *  every table sees the same card each round (random per event, fair across tables) */
   eventSeed?: number;
+  /** LLM-generated, real-world-grounded flavor overrides per event id (mechanics unchanged) */
+  eventFlavor?: Record<string, { name: string; flavor: string; effectText: string }>;
   eventId?: string;
   players: Player[];
   deals: Deal[];

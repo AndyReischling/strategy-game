@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGame } from "../store/useGame";
+import { EVENT_BY_ID } from "../data/events";
+import { llmEnabled, generateEventFlavor } from "../net/llm";
 import { PhaseRail } from "../components/dash/PhaseRail";
 import { EventLog } from "../components/dash/EventLog";
 import { RivalsPanel } from "../components/dash/RivalsPanel";
@@ -21,6 +23,8 @@ type Tab = "build" | "trade" | "score";
 export function GameScreen() {
   const table = useGame((s) => s.table)!;
   const playerId = useGame((s) => s.playerId);
+  const transport = useGame((s) => s.transport);
+  const dispatch = useGame((s) => s.dispatch);
   const toggleGlossary = useGame((s) => s.toggleGlossary);
   const toggleLeaderboard = useGame((s) => s.toggleLeaderboard);
   const showLeaderboard = useGame((s) => s.showLeaderboard);
@@ -36,6 +40,23 @@ export function GameScreen() {
     if (table.phase === "build" || table.phase === "market-open") setTab("build");
     if (table.phase === "score") setTab("score");
   }, [table.phase]);
+
+  // Host generates real-world-grounded event flavor once per game (Claude).
+  const flavorGen = useRef(false);
+  useEffect(() => {
+    if (!llmEnabled() || flavorGen.current) return;
+    const isHost = table.hostId === playerId || transport === "local";
+    if (!isHost || !table.eventDeck?.length || table.eventFlavor) return;
+    flavorGen.current = true;
+    const cards = [...new Set(table.eventDeck)].map((id) => ({
+      id,
+      name: EVENT_BY_ID[id]?.name ?? id,
+      effectText: EVENT_BY_ID[id]?.effectText ?? "",
+    }));
+    generateEventFlavor(cards).then((flavor) => {
+      if (flavor) dispatch({ type: "setEventFlavor", flavor });
+    });
+  }, [table.eventDeck, table.eventFlavor, table.hostId, playerId, transport, dispatch]);
 
   if (table.phase === "final") return <FinalScreen />;
 
