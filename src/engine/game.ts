@@ -517,14 +517,14 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
 
       const verdict = evaluatePitch(p);
       p.pitch = { text: pitch, funded: verdict.funded, amount: verdict.amount, reason: verdict.reason, round: table.round };
+      // pitching the VC is your action whether they fund you or not — a burned pitch ruins your turn
+      p.actionThisRound = "capital";
       if (verdict.funded) {
         p.credits += verdict.amount;
         p.raisesUsed += 1;
-        p.actionThisRound = "capital"; // a funded raise is your action this round
         pushLog(table, "deal", `${p.name} raised §${verdict.amount} from a VC.`);
       } else {
-        // a decline doesn't burn your turn — you can still build or deal this round
-        pushLog(table, "deal", `${p.name} pitched a VC — declined.`);
+        pushLog(table, "deal", `${p.name} pitched a VC — declined. Turn burned.`);
       }
       break;
     }

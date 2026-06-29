@@ -39,7 +39,9 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
       ? <>you built <b>{me.movedLayer ? LAYER_BY_ID[me.movedLayer].name : ""}</b></>
       : me.actionThisRound === "deal"
         ? <>you struck a deal</>
-        : <>you raised capital</>;
+        : me.pitch && !me.pitch.funded
+          ? <>your VC pitch was declined — turn burned</>
+          : <>you raised capital</>;
 
   const buy = (opt: LayerOption) => dispatch({ type: "setPick", playerId, layer: opt.layer, optionId: opt.id });
 
