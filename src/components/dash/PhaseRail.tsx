@@ -19,11 +19,11 @@ export function PhaseRail() {
   const allMoved = waiting === 0;
   const lastRound = table.round >= CONFIG.totalRounds;
 
-  // a deal proposed to a human must be answered before the round can end
+  // a deal still mid-negotiation with a human must be settled before the round ends
   const dealPending = table.deals.some((d) => {
-    if (d.active || d.broken || d.declined || d.confirmedTo) return false;
-    if (d.roundCreated !== table.round) return false;
-    return !!table.players.find((p) => p.id === d.toPlayerId)?.isHuman;
+    if (d.active || d.broken || d.declined || d.roundCreated !== table.round) return false;
+    const responder = !d.confirmedTo ? d.toPlayerId : !d.confirmedFrom ? d.fromPlayerId : null;
+    return !!responder && !!table.players.find((p) => p.id === responder)?.isHuman;
   });
   const canAdvance = allMoved && !dealPending;
 

@@ -25,6 +25,7 @@ export type GameAction =
     }
   | { type: "confirmDeal"; playerId: string; dealId: string }
   | { type: "declineDeal"; playerId: string; dealId: string }
+  | { type: "counterDeal"; playerId: string; dealId: string; terms: DealTerms }
   | { type: "cancelDeal"; playerId: string; dealId: string }
   | { type: "advancePhase"; playerId?: string }
   | { type: "resetTable" };

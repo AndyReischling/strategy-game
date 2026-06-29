@@ -254,6 +254,8 @@ export interface Deal {
   active: boolean;
   broken?: boolean;
   declined?: boolean; // recipient (or a bot) turned the proposal down
+  counters?: number; // how many times the terms have been countered
+  lastActorId?: string; // who last proposed/countered (the other side must answer)
 }
 
 export interface StackPicks {

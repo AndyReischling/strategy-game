@@ -207,6 +207,99 @@ function executeDealOnce(table: TableState, deal: Deal) {
   }
 }
 
+// ─── Deal negotiation (offer → counter → accept, with instant bot replies) ───
+const MAX_COUNTERS = 4;
+
+/** The side that still has to answer the latest terms (null once settled). */
+function dealResponderId(d: Deal): string | null {
+  if (d.active || d.broken || d.declined) return null;
+  if (!d.confirmedTo) return d.toPlayerId;
+  if (!d.confirmedFrom) return d.fromPlayerId;
+  return null;
+}
+
+function activateIfAgreed(table: TableState, d: Deal) {
+  if (d.confirmedFrom && d.confirmedTo && !d.active && !d.declined) {
+    d.active = true;
+    executeDealOnce(table, d);
+    recomputeUnlocks(table);
+    const f = findPlayer(table, d.fromPlayerId);
+    const t = findPlayer(table, d.toPlayerId);
+    pushLog(table, "deal", `${f?.name} ${d.standing ? "+ standing deal +" : "↔"} ${t?.name} — agreed.`);
+  }
+}
+
+/** How a bot weighs a deal it must answer: + good for the bot, − costs it. */
+function botDealValue(table: TableState, d: Deal, bot: Player): { value: number; netCash: number } {
+  const isTo = d.toPlayerId === bot.id;
+  const c = d.terms.creditsFromTo ?? 0; // >0 = `from` pays `to`
+  const netCash = isTo ? c : -c; // cash the bot nets from the deal
+  let nonCash = 0;
+  if (d.terms.grantsPrecondition) nonCash += isTo ? 8 : -8; // unlock lands on `to`
+  if (d.terms.assetId) {
+    const fromHolds = (findPlayer(table, d.fromPlayerId)?.assets ?? []).includes(d.terms.assetId);
+    const botHolds = (fromHolds && d.fromPlayerId === bot.id) || (!fromHolds && d.toPlayerId === bot.id);
+    const worth = d.terms.lease ? 3 : 6;
+    nonCash += botHolds ? -worth : worth;
+  }
+  if (d.terms.investorCut) nonCash += isTo ? 4 : -2;
+  return { value: netCash + nonCash, netCash };
+}
+
+function botDecideDeal(table: TableState, d: Deal, bot: Player):
+  | { action: "accept" }
+  | { action: "counter"; terms: typeof d.terms }
+  | { action: "decline" } {
+  const isTo = d.toPlayerId === bot.id;
+  const c = d.terms.creditsFromTo ?? 0;
+  const { value, netCash } = botDealValue(table, d, bot);
+  const canAfford = netCash >= 0 || bot.credits >= -netCash;
+
+  if (value >= 0 && canAfford) return { action: "accept" };
+
+  if ((d.counters ?? 0) < MAX_COUNTERS) {
+    const extra = Math.ceil(-value) + 2; // cash the bot needs to come out ahead
+    if (extra <= 30) {
+      const newC = isTo ? c + extra : c - extra; // pull cash toward the bot
+      return { action: "counter", terms: { ...d.terms, creditsFromTo: newC } };
+    }
+  }
+  return { action: "decline" };
+}
+
+/** Settle every deal currently waiting on a bot — instantly, in a loop. */
+function resolveBotDeals(table: TableState) {
+  for (let guard = 0; guard < 24; guard++) {
+    const deal = table.deals.find((d) => {
+      if (d.roundCreated !== table.round) return false;
+      const r = dealResponderId(d);
+      if (!r) return false;
+      return !findPlayer(table, r)?.isHuman;
+    });
+    if (!deal) break;
+    const bot = findPlayer(table, dealResponderId(deal)!)!;
+    const decision = botDecideDeal(table, deal, bot);
+    const other = findPlayer(table, bot.id === deal.toPlayerId ? deal.fromPlayerId : deal.toPlayerId);
+    if (decision.action === "accept") {
+      if (bot.id === deal.toPlayerId) deal.confirmedTo = true; else deal.confirmedFrom = true;
+      deal.lastActorId = bot.id;
+      activateIfAgreed(table, deal);
+    } else if (decision.action === "counter") {
+      deal.terms = decision.terms;
+      deal.counters = (deal.counters ?? 0) + 1;
+      if (bot.id === deal.toPlayerId) { deal.confirmedTo = true; deal.confirmedFrom = false; }
+      else { deal.confirmedFrom = true; deal.confirmedTo = false; }
+      deal.lastActorId = bot.id;
+      pushLog(table, "deal", `${bot.name} countered ${other?.name}'s offer.`);
+    } else {
+      deal.declined = true;
+      const proposer = findPlayer(table, deal.fromPlayerId);
+      if (proposer && deal.roundCreated === table.round && proposer.actionThisRound === "deal") proposer.actionThisRound = null;
+      pushLog(table, "deal", `${bot.name} declined ${other?.name}'s offer.`);
+    }
+  }
+}
+
 // ─── Region setup: give a player its starting assets ─────────────────────────
 function grantStartingAssets(player: Player) {
   const region = REGION_BY_ID[player.regionId];
@@ -601,44 +694,47 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
         confirmedTo: false,
         roundCreated: table.round,
         active: false,
+        counters: 0,
+        lastActorId: from.id,
       };
       from.actionThisRound = "deal"; // proposing a deal is your action this round
       table.deals.push(deal);
-
-      if (!to.isHuman) {
-        // Bots answer instantly: accept anything that nets them cash or a free
-        // asset and they can afford; otherwise decline (and refund the proposer).
-        const net = action.terms.creditsFromTo ?? 0; // >0 means the bot is paid
-        const canAfford = net >= 0 || to.credits >= -net;
-        const accept = canAfford && (net >= 0 || !!action.terms.assetId);
-        if (accept) {
-          deal.confirmedTo = true;
-          deal.active = true;
-          executeDealOnce(table, deal);
-          recomputeUnlocks(table);
-          pushLog(table, "deal", `${to.name} accepted ${from.name}'s offer.`);
-        } else {
-          deal.declined = true;
-          from.actionThisRound = null; // a declined offer doesn't burn your turn
-          pushLog(table, "deal", `${to.name} declined ${from.name}'s offer.`);
-        }
-      }
+      // a bot recipient answers instantly via resolveBotDeals() at the end of apply;
+      // a human recipient gets a blocking modal and must accept / decline / counter.
       break;
     }
     case "confirmDeal": {
       const p = findPlayer(table, action.playerId);
       const deal = table.deals.find((d) => d.id === action.dealId);
-      if (!p || !deal) break;
+      if (!p || !deal || deal.active || deal.declined || deal.broken) break;
       if (deal.fromPlayerId === p.id) deal.confirmedFrom = true;
       if (deal.toPlayerId === p.id) deal.confirmedTo = true;
-      if (deal.confirmedFrom && deal.confirmedTo && !deal.active) {
-        deal.active = true;
-        executeDealOnce(table, deal);
-        recomputeUnlocks(table);
-        const f = findPlayer(table, deal.fromPlayerId);
-        const t = findPlayer(table, deal.toPlayerId);
-        pushLog(table, "deal", `${f?.name} ${deal.standing ? "+ standing deal +" : "↔"} ${t?.name}.`);
-      }
+      deal.lastActorId = p.id;
+      activateIfAgreed(table, deal);
+      break;
+    }
+    case "counterDeal": {
+      const p = findPlayer(table, action.playerId);
+      const deal = table.deals.find((d) => d.id === action.dealId);
+      if (!p || !deal) break;
+      if (deal.active || deal.declined || deal.broken) { error = "That deal is already settled."; break; }
+      if (dealResponderId(deal) !== p.id) { error = "It's not your turn to answer this deal."; break; }
+      if ((deal.counters ?? 0) >= MAX_COUNTERS) { error = "Too much back-and-forth — accept or decline."; break; }
+      // counter the cash terms (and any other terms the client sent back)
+      deal.terms = {
+        ...deal.terms,
+        creditsFromTo: action.terms.creditsFromTo ?? deal.terms.creditsFromTo,
+        ...(action.terms.assetId !== undefined ? { assetId: action.terms.assetId } : {}),
+        ...(action.terms.grantsPrecondition !== undefined ? { grantsPrecondition: action.terms.grantsPrecondition } : {}),
+        ...(action.terms.investorCut !== undefined ? { investorCut: action.terms.investorCut } : {}),
+      };
+      deal.counters = (deal.counters ?? 0) + 1;
+      // the counter-er has committed to these terms; the other side must answer
+      if (p.id === deal.toPlayerId) { deal.confirmedTo = true; deal.confirmedFrom = false; }
+      else { deal.confirmedFrom = true; deal.confirmedTo = false; }
+      deal.lastActorId = p.id;
+      const other = findPlayer(table, p.id === deal.toPlayerId ? deal.fromPlayerId : deal.toPlayerId);
+      pushLog(table, "deal", `${p.name} countered ${other?.name}'s offer.`);
       break;
     }
     case "declineDeal": {
@@ -676,15 +772,14 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       // UI — there are no manual phase steps anymore.
       if (table.phase === "lobby" || table.phase === "final") break;
 
-      // a deal proposed to a human must be answered before the round can end
+      // a deal still mid-negotiation with a human must be settled before the round ends
       const awaitingHuman = table.deals.some((d) => {
-        if (d.active || d.broken || d.declined || d.confirmedTo) return false;
         if (d.roundCreated !== table.round) return false;
-        const recipient = findPlayer(table, d.toPlayerId);
-        return !!recipient?.isHuman;
+        const r = dealResponderId(d);
+        return !!r && !!findPlayer(table, r)?.isHuman;
       });
       if (awaitingHuman) {
-        error = "A deal is still awaiting a response — that player must accept or decline first.";
+        error = "A deal is still on the table — it must be accepted or declined before the round ends.";
         break;
       }
 
@@ -716,6 +811,9 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       break;
     }
   }
+
+  // bots answer any deal now waiting on them, instantly (offer → counter → settle)
+  if (table.phase !== "lobby" && table.phase !== "final") resolveBotDeals(table);
 
   // keep running scores live so the round panel + leaderboard always reflect
   // the current board (scoreTick is idempotent: it recomputes from scratch).

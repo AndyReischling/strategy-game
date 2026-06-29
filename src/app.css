@@ -282,6 +282,8 @@ input[type="number"] { font-family: var(--font-mono); }
 .incoming-terms { font-size: 1.05rem; font-weight: 700; line-height: 1.35; margin: 0.5rem 0; }
 .incoming-actions { display: flex; gap: 0.5rem; margin-top: 0.9rem; }
 .incoming-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; }
+.incoming-counter-toggle { width: 100%; margin-top: 0.5rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; }
+.incoming-counter { margin-top: 0.6rem; }
 
 /* ── Drawers (glossary + leaderboard) ───────────────────── */
 .drawer-backdrop { position: absolute; inset: 0; z-index: 60; background: rgba(26,26,24,0.4); display: flex; justify-content: flex-end; animation: fade 0.2s; }
