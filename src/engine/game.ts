@@ -15,7 +15,7 @@ import { REGIONS, REGION_BY_ID } from "../data/regions";
 import { OPTION_BY_ID } from "../data/layers";
 import {
   EVENT_BY_ID,
-  SEEDED_EVENT_ORDER,
+  WORLD_EVENT_IDS,
   OFFSWITCH_OUTCOMES,
 } from "../data/events";
 import { priceFor } from "./pricing";
@@ -38,7 +38,12 @@ export function emptyScore(): ScoreBreakdown {
   };
 }
 
-export function newTable(code: string): TableState {
+export function newTable(code: string, seed?: number): TableState {
+  // Each game gets its own random seed (unless one is passed for tests), so the
+  // world-event draw AND the off-switch dice differ every game — not a fixed
+  // pattern keyed to the table code.
+  const gameSeed =
+    seed ?? ((hashStringToSeed(code.toUpperCase()) ^ Math.floor(Math.random() * 0xffffffff)) >>> 0);
   return {
     code: code.toUpperCase(),
     round: 0,
@@ -46,9 +51,23 @@ export function newTable(code: string): TableState {
     log: [],
     players: [],
     deals: [],
-    seed: hashStringToSeed(code.toUpperCase()),
+    seed: gameSeed,
     updatedAt: Date.now(),
   };
+}
+
+/** Draw the round-by-round world events: a seeded shuffle of distinct cards. */
+function drawEventDeck(seed: number, rounds: number): string[] {
+  const rng = mulberry32(seed ^ hashStringToSeed("events"));
+  const ids = [...WORLD_EVENT_IDS];
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  // if more rounds than cards, wrap around (re-shuffles past the deck length)
+  const deck: string[] = [];
+  for (let r = 0; r < rounds; r++) deck.push(ids[r % ids.length]);
+  return deck;
 }
 
 function pushLog(table: TableState, kind: LogKind, text: string) {
@@ -297,7 +316,10 @@ function enterPhase(table: TableState, phase: TableState["phase"]) {
   table.phase = phase;
   switch (phase) {
     case "market-open": {
-      table.eventId = SEEDED_EVENT_ORDER[(table.round - 1) % SEEDED_EVENT_ORDER.length];
+      if (!table.eventDeck || table.eventDeck.length === 0) {
+        table.eventDeck = drawEventDeck(table.seed, CONFIG.totalRounds);
+      }
+      table.eventId = table.eventDeck[(table.round - 1) % table.eventDeck.length];
       if (table.round > 1) applyRoundStart(table);
       recomputeUnlocks(table);
       table.lastRoll = undefined;
@@ -402,6 +424,7 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       const ready = table.players.filter((p) => p.ready);
       if (ready.length === 0) { error = "Pick a region first."; break; }
       pushLog(table, "game", `Game begins — ${ready.length} player${ready.length === 1 ? "" : "s"}.`);
+      table.eventDeck = drawEventDeck(table.seed, CONFIG.totalRounds);
       table.round = 1;
       enterPhase(table, "market-open");
       break;

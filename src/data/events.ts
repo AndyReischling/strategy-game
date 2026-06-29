@@ -127,7 +127,10 @@ export const WORLD_EVENTS: WorldEvent[] = [
 
 export const EVENT_BY_ID = Object.fromEntries(WORLD_EVENTS.map((e) => [e.id, e]));
 
-/** Suggested seeded order for a balanced 5-round game (§12a). */
+/** All world-event card ids — the deck a game draws from. */
+export const WORLD_EVENT_IDS = WORLD_EVENTS.map((e) => e.id);
+
+/** A pleasant escalating order, used only as a fallback if a deck isn't drawn. */
 export const SEEDED_EVENT_ORDER = [
   "ev-nvidia-toll",
   "ev-cost-gap",

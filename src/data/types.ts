@@ -320,6 +320,8 @@ export interface TableState {
   phase: Phase;
   hostId?: string;
   log: LogEntry[];
+  /** the shuffled world-event cards drawn for this game (one per round) */
+  eventDeck?: string[];
   eventId?: string;
   players: Player[];
   deals: Deal[];
