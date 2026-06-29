@@ -38,9 +38,10 @@ export function Landing() {
         </h1>
         <p className="hero-sub">
           We already know that there are big American technology companies that have cornered the
-          market for AI infrastructure. This has caused real problems for middle power nations'
-          sovereignty given their reliance on American technology and soft power. This game
-          reimagines what a reconstituted coalition could look like: how would you build a
+          market for AI infrastructure. This has caused problems for middle power nations' sovereignty.
+        </p>
+        <p className="hero-sub">
+          This game reimagines what a reconstituted coalition could look like: how would you build a
           competitor to the biggest companies on Earth?
         </p>
       </header>

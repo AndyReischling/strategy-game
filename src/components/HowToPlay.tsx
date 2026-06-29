@@ -49,9 +49,11 @@ export function HowToPlay() {
             <h2 className="howto-title">The big idea</h2>
             <p className="howto-lead">
               We already know that there are big American technology companies that have cornered the market for
-              AI infrastructure. This has caused real problems for middle power nations' sovereignty given their
-              reliance on American technology and soft power. This game reimagines what a reconstituted coalition
-              could look like: how would you build a competitor to the biggest companies on Earth?
+              AI infrastructure. This has caused problems for middle power nations' sovereignty.
+            </p>
+            <p className="howto-lead">
+              This game reimagines what a reconstituted coalition could look like: how would you build a
+              competitor to the biggest companies on Earth?
             </p>
             <p className="howto-lead">
               You play a country or region. <b>Everyone starts with the same money.</b> What's different is what your
