@@ -32,9 +32,14 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
   const layerDef = LAYER_BY_ID[layer];
   const LIcon = LAYER_ICON[layer];
 
-  // one build/upgrade per round: if you've already acted on a different layer, this one is locked
-  const moveLocked = !!me.movedLayer && me.movedLayer !== layer;
-  const movedName = me.movedLayer ? LAYER_BY_ID[me.movedLayer].name : "";
+  // one action per round: locked unless you're refining the same layer you built this round
+  const moveLocked = !!me.actionThisRound && !(me.actionThisRound === "build" && me.movedLayer === layer);
+  const actedMsg =
+    me.actionThisRound === "build"
+      ? <>you built <b>{me.movedLayer ? LAYER_BY_ID[me.movedLayer].name : ""}</b></>
+      : me.actionThisRound === "deal"
+        ? <>you struck a deal</>
+        : <>you raised capital</>;
 
   const buy = (opt: LayerOption) => dispatch({ type: "setPick", playerId, layer: opt.layer, optionId: opt.id });
 
@@ -50,7 +55,7 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
 
       {moveLocked && (
         <div className="move-lock">
-          <b>That's your move this round — you built {movedName}.</b> Make deals on the <b>Deals</b> tab, then end the round to build another layer next turn.
+          <b>That's your one action this round — {actedMsg}.</b> You can still <i>accept</i> offers others send you on the <b>Deals</b> tab. End the round to act again next turn.
         </div>
       )}
 

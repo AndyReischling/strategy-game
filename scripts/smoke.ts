@@ -84,11 +84,7 @@ async function main() {
 
     a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // -> trade
     await sleep(40);
-    // a deal: Bo (Gulf) pays Amara 3 for cluster access (fills a gap)
-    a.send({ t: "action", code: CODE, action: { type: "proposeDeal", playerId: pa, toPlayerId: pb, kind: "access", terms: { creditsFromTo: -3, grantsPrecondition: "deal-compute", fillsGap: true }, standing: false } as never });
-    await sleep(40);
-    b.send({ t: "action", code: CODE, action: { type: "confirmDeal", playerId: pb, dealId: a.table?.deals.at(-1)?.id } as never });
-    await sleep(40);
+    // one action per round is spent on the build, so no deal here
 
     a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // -> off-switch
     await sleep(40);

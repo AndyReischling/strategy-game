@@ -38,7 +38,7 @@ export function StackColumn({ player, interactive, selectedLayer, onSelect, comp
     );
   }
 
-  const moveUsed = interactive && !!player.movedLayer;
+  const moveUsed = interactive && !!player.actionThisRound;
   return (
     <div className={`stack-col c-${player.color}`}>
       {TOP_DOWN.map((l) => {

@@ -12,7 +12,7 @@ export type GameAction =
   | { type: "startGame" }
   | { type: "setPick"; playerId: string; layer: LayerId; optionId: string }
   | { type: "clearPick"; playerId: string; layer: LayerId }
-  | { type: "raiseCapital"; playerId: string } // UK/Gulf one-time injection
+  | { type: "pitchVC"; playerId: string; pitch: string } // raise capital by pitching a VC
   | {
       type: "proposeDeal";
       playerId: string; // proposer

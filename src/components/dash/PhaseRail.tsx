@@ -7,8 +7,8 @@ import type { Icon } from "../icons";
 const PHASE_META: Record<string, { label: string; icon: Icon; hint: string }> = {
   "market-open": { label: "Market", icon: ShoppingCart, hint: "Prices are posted with this round's modifiers. You already have your budget." },
   "world-event": { label: "Event", icon: Megaphone, hint: "One card flips for the whole table — it sets the round's weather." },
-  build: { label: "Build", icon: Hammer, hint: "Your move: build or upgrade ONE layer this round. Your stack comes together over the five rounds." },
-  trade: { label: "Trade", icon: Handshake, hint: "The heart of it — strike deals to fill the gaps your one build can't cover." },
+  build: { label: "Build", icon: Hammer, hint: "Your one action this round: buy a piece of infrastructure (one layer) — or spend it on a VC pitch or a deal instead." },
+  trade: { label: "Trade", icon: Handshake, hint: "Spend your action on ONE deal or a VC pitch; accepting offers others send you is always free." },
   "off-switch": { label: "Off-switch", icon: Power, hint: "The adversary's move. Exposed stacks crack; sovereign ones shrug it off." },
   score: { label: "Score", icon: Sparkle, hint: "Running scores update and write to the live leaderboard." },
 };

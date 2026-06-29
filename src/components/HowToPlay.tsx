@@ -63,7 +63,7 @@ export function HowToPlay() {
               <ArrowRight size={20} className="loop-arrow" />
               <div className="loop-step"><span className="loop-ico"><Power size={26} /></span><b>Watch</b><span className="tiny">the dice test your shortcuts</span></div>
             </div>
-            <p className="tiny muted">Each round you make <b>one move</b> — build a single layer and strike deals. Then the round ends, an event hits, and round 2 begins. Your stack and your coalition come together over five rounds.</p>
+            <p className="tiny muted">Each round you take <b>one action</b>: buy a piece of infrastructure, pitch a VC for capital (two sentences — they can say no), or strike a deal with another player. (Accepting an offer someone sends you is always free.) Then the round ends, an event hits, and round 2 begins — your stack and coalition come together over five rounds.</p>
           </div>
         )}
 

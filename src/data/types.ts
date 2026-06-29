@@ -280,13 +280,20 @@ export interface Player {
   paid: Partial<Record<LayerId, number>>;
   /** layers locked at the end of a prior round — changing them costs a switching penalty */
   lockedLayers: LayerId[];
-  /** the single layer this player built/changed this round (one move per round); null = move unused */
+  /** the single layer this player built/changed this round (for the build action & UI); null = no build */
   movedLayer: LayerId | null;
+  /** the one action this player has spent this round — build, propose a deal, or raise capital. null = unused.
+   *  (Accepting an offer made to you is free — it spends the proposer's action, not yours.) */
+  actionThisRound: "build" | "deal" | "capital" | null;
   /** assets currently held (starts from region, changes via trades) */
   assets: AssetId[];
   /** preconditions unlocked via deals (recomputed each round from active deals) */
   unlocks: Precondition[];
   fragility: FragilityMark[];
+  /** how many times this player has been funded by the VC this game (raise cap) */
+  raisesUsed: number;
+  /** the most recent VC pitch result, for UI feedback */
+  pitch?: { text: string; funded: boolean; amount: number; reason: string; round: number };
   /** standing investments taken: investorId -> score cut fraction */
   backers: { investorId: string; cut: number }[];
   isHuman: boolean;

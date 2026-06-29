@@ -3,6 +3,7 @@ import { useGame } from "../../store/useGame";
 import { REGION_BY_ID } from "../../data/regions";
 import { Term } from "../Term";
 import { credits } from "../util";
+import { Bank, Check, X } from "../icons";
 import type { DealKind, Precondition, AssetId, Deal } from "../../data/types";
 
 const ASSET_LABEL: Record<string, string> = {
@@ -41,6 +42,7 @@ export function TradePanel() {
   const [precond, setPrecond] = useState<Precondition>("deal-compute");
   const [standing, setStanding] = useState(false);
   const [investorCut, setInvestorCut] = useState(0);
+  const [pitch, setPitch] = useState("");
 
   if (!me) return null;
   const to = table.players.find((p) => p.id === toId);
@@ -80,12 +82,11 @@ export function TradePanel() {
     <div className="stage-panel trade-view" aria-label="Deals">
       <p className="tiny muted" style={{ marginTop: 0 }}>Bilateral trades. Both sides confirm; the app moves Credits, assets & unlocks. <Term id="standing-deal">Standing deals</Term> auto-repeat — and can break under pressure.</p>
 
-      {others.length === 0 ? (
-        <p className="muted">No one else at the table yet. Deals need a partner.</p>
-      ) : (
-        <div className="trade-grid">
+      <div className="trade-grid">
+        <div className="trade-left">
           <section className="propose card">
             <h3 className="tiny upper">Propose a deal</h3>
+            {others.length === 0 && <p className="tiny muted">No other players yet — a deal needs a partner. You can still pitch a VC below.</p>}
             <label className="field"><span>With</span>
               <select value={toId} onChange={(e) => setToId(e.target.value)}>
                 {others.map((p) => <option key={p.id} value={p.id}>{REGION_BY_ID[p.regionId]?.flag} {p.name} — {REGION_BY_ID[p.regionId]?.name}</option>)}
@@ -132,8 +133,30 @@ export function TradePanel() {
               <label className="check"><input type="checkbox" checked={standing} onChange={(e) => setStanding(e.target.checked)} /> Make it a <Term id="standing-deal">standing</Term> deal (auto-repeats)</label>
             )}
 
-            <button className="btn btn-go" style={{ width: "100%", marginTop: "0.5rem" }} onClick={propose} disabled={!toId}>Propose →</button>
+            {me.actionThisRound && (
+              <p className="tiny warn-text" style={{ margin: "0.5rem 0 0" }}>
+                You've used your action this round ({me.actionThisRound === "build" ? "built a layer" : me.actionThisRound === "deal" ? "proposed a deal" : "raised capital"}). You can still accept offers below.
+              </p>
+            )}
+            <button className="btn btn-go" style={{ width: "100%", marginTop: "0.5rem" }} onClick={propose} disabled={!toId || !!me.actionThisRound}>Propose →</button>
           </section>
+
+          <section className="raise card">
+            <h3 className="tiny upper"><Bank size={14} /> Raise capital — pitch a VC</h3>
+            <p className="tiny muted">Two sentences on why to fund your stack. The VC backs a coherent, defensible plan — and turns down a weak or over-exposed one.</p>
+            <textarea className="pitch-box" rows={3} maxLength={240} value={pitch} onChange={(e) => setPitch(e.target.value)} placeholder="In two sentences: what are you building, and why is it the one to back?" />
+            <button className="btn btn-go" style={{ width: "100%" }} disabled={!!me.actionThisRound || pitch.trim().length < 12} onClick={() => dispatch({ type: "pitchVC", playerId, pitch })}>
+              Pitch to the VC →
+            </button>
+            {me.pitch && me.pitch.round === table.round && (
+              <div className={`pitch-result ${me.pitch.funded ? "funded" : "declined"}`}>
+                {me.pitch.funded
+                  ? <span className="row gap-1"><Check size={14} /> <span><b>Funded {credits(me.pitch.amount)}.</b> {me.pitch.reason}</span></span>
+                  : <span className="row gap-1"><X size={14} /> <span><b>Declined.</b> {me.pitch.reason}</span></span>}
+              </div>
+            )}
+          </section>
+        </div>
 
           <section className="deals-list">
             {pending.length > 0 && <h3 className="tiny upper">Awaiting confirmation</h3>}
@@ -164,8 +187,7 @@ export function TradePanel() {
               </div>
             ))}
           </section>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

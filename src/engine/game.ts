@@ -19,7 +19,7 @@ import {
   OFFSWITCH_OUTCOMES,
 } from "../data/events";
 import { priceFor } from "./pricing";
-import { computeScore } from "./scoring";
+import { computeScore, computeCoherence, computeSovereignty } from "./scoring";
 import { canBuild } from "./preconditions";
 import { resolveOffSwitch } from "./offswitch";
 import { mulberry32, rollDie, hashStringToSeed } from "./rng";
@@ -89,14 +89,44 @@ export function newPlayer(id: string, name: string, isHuman: boolean): Player {
     paid: {},
     lockedLayers: [],
     movedLayer: null,
+    actionThisRound: null,
     assets: [],
     unlocks: [],
     fragility: [],
+    raisesUsed: 0,
     backers: [],
     isHuman,
     ready: false,
     score: emptyScore(),
   };
+}
+
+// ─── VC pitch: capital follows a credible, defensible plan ───────────────────
+const MIN_PITCH_LEN = 12;
+const MAX_RAISES = 2;
+
+export function evaluatePitch(player: Player): { funded: boolean; amount: number; reason: string } {
+  const picks = (Object.values(player.picks).filter(Boolean) as string[])
+    .map((id) => OPTION_BY_ID[id])
+    .filter(Boolean);
+
+  // Gulf SWF is the financier — its own capital is effectively bottomless.
+  if (player.regionId === "gulf-swf") {
+    if (player.raisesUsed >= MAX_RAISES + 1) return { funded: false, amount: 0, reason: "Even sovereign wealth wants to see it deployed — back a partner first." };
+    return { funded: true, amount: 6, reason: "Sovereign-wealth backing — the capital is already yours to direct." };
+  }
+
+  if (picks.length < 2) return { funded: false, amount: 0, reason: "You've barely begun. Build more of your stack before asking for money." };
+  if (player.raisesUsed >= MAX_RAISES) return { funded: false, amount: 0, reason: "You've raised twice already — investors want to see returns before the next round." };
+
+  const sov = computeSovereignty(picks);
+  const coh = computeCoherence(picks).multiplier;
+
+  if (sov.fraction <= -0.2) return { funded: false, amount: 0, reason: "Too exposed — they fear an off-switch wipes their investment overnight." };
+  if (coh < 1.0) return { funded: false, amount: 0, reason: "Your picks don't hang together. Investors want a coherent plan, not a grab-bag." };
+
+  const amount = sov.fraction >= 0.4 ? 6 : 4;
+  return { funded: true, amount, reason: "A coherent, defensible plan — the term sheet is yours." };
 }
 
 function findPlayer(table: TableState, id: string): Player | undefined {
@@ -202,7 +232,7 @@ function botBuild(table: TableState, bot: Player) {
   const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
   const region = REGION_BY_ID[bot.regionId];
   if (!region) return;
-  if (bot.movedLayer) return; // bots also build just one layer per round
+  if (bot.actionThisRound) return; // bots also take just one action per round
   for (const layer of Object.keys(BOT_PLAN) as LayerId[]) {
     if (bot.picks[layer]) continue;
     for (const optId of BOT_PLAN[layer]) {
@@ -217,6 +247,7 @@ function botBuild(table: TableState, bot: Player) {
         bot.picks[layer] = optId;
         bot.paid[layer] = price.cost;
         bot.movedLayer = layer;
+        bot.actionThisRound = "build";
         return; // one build, then done for the round
       }
     }
@@ -327,8 +358,8 @@ function enterPhase(table: TableState, phase: TableState["phase"]) {
       }
       table.eventId = table.eventDeck[(table.round - 1) % table.eventDeck.length];
       if (table.round > 1) applyRoundStart(table);
-      // fresh move for everyone this round (one build/upgrade per round)
-      for (const p of table.players) p.movedLayer = null;
+      // fresh single action for everyone this round
+      for (const p of table.players) { p.movedLayer = null; p.actionThisRound = null; }
       recomputeUnlocks(table);
       table.lastRoll = undefined;
       table.brokenDeals = undefined;
@@ -356,10 +387,12 @@ function enterPhase(table: TableState, phase: TableState["phase"]) {
 function setPick(table: TableState, player: Player, layer: LayerId, optionId: string): string | null {
   if (table.phase !== "build" && table.phase !== "trade" && table.phase !== "market-open")
     return "You can only build during the build & trade phases.";
-  // one build/upgrade per round — you act on a single layer each round
-  if (player.movedLayer && player.movedLayer !== layer) {
-    const moved = OPTION_BY_ID[player.picks[player.movedLayer] ?? ""]?.layer ?? player.movedLayer;
-    return `One build per round — you've already acted on ${moved} this round. Trade now, or build another layer next round.`;
+  // one action per round — build is allowed only if you haven't acted, or you're
+  // refining the same layer you already built this round
+  if (player.actionThisRound && !(player.actionThisRound === "build" && player.movedLayer === layer)) {
+    return player.actionThisRound === "build"
+      ? `One action per round — you've already built ${player.movedLayer} this round.`
+      : "One action per round — you've already acted (a deal) this round. Build next round.";
   }
   const option = OPTION_BY_ID[optionId];
   if (!option || option.layer !== layer) return "Unknown option.";
@@ -381,7 +414,8 @@ function setPick(table: TableState, player: Player, layer: LayerId, optionId: st
   player.credits = available - price.cost - penalty;
   player.picks[layer] = optionId;
   player.paid[layer] = price.cost;
-  player.movedLayer = layer; // this round's move is spent on this layer
+  player.movedLayer = layer;
+  player.actionThisRound = "build"; // this round's single action is spent
   return null;
 }
 
@@ -456,8 +490,8 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
     case "clearPick": {
       const p = findPlayer(table, action.playerId);
       if (!p) break;
-      if (p.movedLayer && p.movedLayer !== action.layer) {
-        error = "One build per round — you can only change the layer you acted on this round.";
+      if (p.actionThisRound && !(p.actionThisRound === "build" && p.movedLayer === action.layer)) {
+        error = "One action per round — you can only change the layer you built this round.";
         break;
       }
       const refund = p.paid[action.layer] ?? 0;
@@ -465,20 +499,33 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       const wasThisRoundMove = p.movedLayer === action.layer;
       delete p.picks[action.layer];
       delete p.paid[action.layer];
-      // undoing this round's build frees the move again; clearing an older pick spends it
-      p.movedLayer = wasThisRoundMove ? null : action.layer;
+      // undoing this round's build frees the action again; clearing an older pick spends it
+      if (wasThisRoundMove) { p.movedLayer = null; p.actionThisRound = null; }
+      else { p.movedLayer = action.layer; p.actionThisRound = "build"; }
       break;
     }
-    case "raiseCapital": {
+    case "pitchVC": {
       const p = findPlayer(table, action.playerId);
       if (!p) break;
-      if (p.regionId !== "uk" && p.regionId !== "gulf-swf" && p.regionId !== "france") {
-        error = "Only the UK, France (Bpifrance) or the Gulf can raise extra capital.";
+      if (table.phase !== "build" && table.phase !== "trade" && table.phase !== "market-open") {
+        error = "You can pitch during the build & trade phases.";
         break;
       }
-      if ((p as Player & { raised?: boolean }).raised) { error = "Already raised this game."; break; }
-      p.credits += 5;
-      (p as Player & { raised?: boolean }).raised = true;
+      if (p.actionThisRound) { error = "One action per round — you've already acted this round."; break; }
+      const pitch = (action.pitch ?? "").trim();
+      if (pitch.length < MIN_PITCH_LEN) { error = "Give the VC a real pitch — two sentences on why to fund your stack."; break; }
+
+      const verdict = evaluatePitch(p);
+      p.pitch = { text: pitch, funded: verdict.funded, amount: verdict.amount, reason: verdict.reason, round: table.round };
+      if (verdict.funded) {
+        p.credits += verdict.amount;
+        p.raisesUsed += 1;
+        p.actionThisRound = "capital"; // a funded raise is your action this round
+        pushLog(table, "deal", `${p.name} raised §${verdict.amount} from a VC.`);
+      } else {
+        // a decline doesn't burn your turn — you can still build or deal this round
+        pushLog(table, "deal", `${p.name} pitched a VC — declined.`);
+      }
       break;
     }
     case "proposeDeal": {
@@ -487,6 +534,12 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       if (!from || !to) { error = "Player not found."; break; }
       if (table.phase !== "trade" && table.phase !== "market-open" && table.phase !== "build") {
         error = "Deals happen during the build & trade phases.";
+        break;
+      }
+      if (from.actionThisRound) {
+        error = from.actionThisRound === "build"
+          ? "One action per round — you built this round. Propose deals next round (you can still accept offers)."
+          : "One action per round — you've already acted this round.";
         break;
       }
       const deal: Deal = {
@@ -506,6 +559,7 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
         const c = action.terms.creditsFromTo ?? 0;
         deal.confirmedTo = c >= 0 || !!action.terms.assetId;
       }
+      from.actionThisRound = "deal"; // proposing a deal is your action this round
       table.deals.push(deal);
       if (deal.confirmedFrom && deal.confirmedTo) {
         deal.active = true;
@@ -533,7 +587,15 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
     }
     case "cancelDeal": {
       const deal = table.deals.find((d) => d.id === action.dealId);
-      if (deal) { deal.active = false; deal.broken = false; }
+      if (deal) {
+        // refund the proposer's action if they cancel a deal they proposed this round
+        const proposer = findPlayer(table, deal.fromPlayerId);
+        if (proposer && action.playerId === proposer.id && deal.roundCreated === table.round && proposer.actionThisRound === "deal") {
+          proposer.actionThisRound = null;
+        }
+        deal.active = false;
+        deal.broken = false;
+      }
       recomputeUnlocks(table);
       break;
     }
