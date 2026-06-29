@@ -19,6 +19,14 @@ export function PhaseRail() {
   const allMoved = waiting === 0;
   const lastRound = table.round >= CONFIG.totalRounds;
 
+  // a deal proposed to a human must be answered before the round can end
+  const dealPending = table.deals.some((d) => {
+    if (d.active || d.broken || d.declined || d.confirmedTo) return false;
+    if (d.roundCreated !== table.round) return false;
+    return !!table.players.find((p) => p.id === d.toPlayerId)?.isHuman;
+  });
+  const canAdvance = allMoved && !dealPending;
+
   return (
     <div className="phase-rail">
       <div className="pr-round">
@@ -55,13 +63,15 @@ export function PhaseRail() {
             <button
               className="btn btn-go"
               onClick={() => dispatch({ type: "advancePhase", playerId })}
-              disabled={!allMoved}
+              disabled={!canAdvance}
             >
               {lastRound ? "See final results" : `Next round (${table.round + 1})`} <ArrowRight size={16} />
             </button>
-            {!allMoved && (
+            {!allMoved ? (
               <span className="tiny warn-text pr-waiting">{waiting} {waiting === 1 ? "player" : "players"} still to move</span>
-            )}
+            ) : dealPending ? (
+              <span className="tiny warn-text pr-waiting">Waiting on a deal response</span>
+            ) : null}
           </>
         ) : (
           <span className="tiny muted">{allMoved ? "The host starts the next round." : "Take your move — then the host ends the round."}</span>

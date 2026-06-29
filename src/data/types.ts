@@ -253,6 +253,7 @@ export interface Deal {
   roundCreated: number;
   active: boolean;
   broken?: boolean;
+  declined?: boolean; // recipient (or a bot) turned the proposal down
 }
 
 export interface StackPicks {

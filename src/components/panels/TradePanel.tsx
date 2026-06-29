@@ -5,14 +5,8 @@ import { Term } from "../Term";
 import { credits } from "../util";
 import { Bank, Check, X } from "../icons";
 import { judgePitch, stackSummary, llmEnabled } from "../../net/llm";
+import { ASSET_LABEL, PRECOND_LABEL, summarizeDeal } from "../dealText";
 import type { DealKind, Precondition, AssetId, Deal } from "../../data/types";
-
-const ASSET_LABEL: Record<string, string> = {
-  "asml-token": "ASML token", "mistral-license": "Mistral license", "cohere-license": "Cohere license",
-  "nscale-capacity": "Nscale capacity", "enterprise-channel": "Enterprise channel", "consumer-channel": "Consumer channel",
-  "open-weights-grant": "Open-weights grant", "renewable-sites": "Renewable sites", "chip-allocation": "Chip allocation",
-  "swf-financing": "SWF financing", "industrial-demand": "Industrial demand",
-};
 
 // Inputs are denominated in billions of USD. Format with thousands separators
 // and parse anything the user types (commas, "$", "b") back to a plain number.
@@ -28,19 +22,6 @@ const inWords = (billions: number): string => {
     return `$${t.toLocaleString("en-US")} trillion`;
   }
   return `$${billions.toLocaleString("en-US")} billion`;
-};
-
-const PRECOND_LABEL: Partial<Record<Precondition, string>> = {
-  "deal-compute": "Cluster access (compute)",
-  "supply-allocation": "Chip supply allocation",
-  "high-power": "High-power base",
-  "renewable-power": "Renewable-power base",
-  "open-weights": "Open weights (free L4)",
-  "market-channel": "Market channel (L5 reach)",
-  "political-standing": "Political cover / standing",
-  "co-funder-1": "Shared-build commitment",
-  "co-funders-2": "Coalition co-funder",
-  "oss-grant": "OSS open-weights grant",
 };
 
 export function TradePanel() {
@@ -107,21 +88,10 @@ export function TradePanel() {
   };
 
   const myDeals = table.deals.filter((d) => d.fromPlayerId === playerId || d.toPlayerId === playerId);
-  const pending = myDeals.filter((d) => !d.active && !d.broken && ((d.toPlayerId === playerId && !d.confirmedTo) || (d.fromPlayerId === playerId && !d.confirmedFrom)));
+  const pending = myDeals.filter((d) => !d.active && !d.broken && !d.declined && ((d.toPlayerId === playerId && !d.confirmedTo) || (d.fromPlayerId === playerId && !d.confirmedFrom)));
   const active = table.deals.filter((d) => d.active && !d.broken);
 
-  const dealSummary = (d: Deal) => {
-    const from = table.players.find((p) => p.id === d.fromPlayerId);
-    const t = table.players.find((p) => p.id === d.toPlayerId);
-    const parts: string[] = [];
-    const c = d.terms.creditsFromTo ?? 0;
-    if (c > 0) parts.push(`${from?.name} pays ${credits(c)} → ${t?.name}`);
-    if (c < 0) parts.push(`${t?.name} pays ${credits(-c)} → ${from?.name}`);
-    if (d.terms.assetId) parts.push(`${d.terms.lease ? "leases" : "sells"} ${ASSET_LABEL[d.terms.assetId]}`);
-    if (d.terms.grantsPrecondition) parts.push(`unlocks ${PRECOND_LABEL[d.terms.grantsPrecondition] ?? d.terms.grantsPrecondition}`);
-    if (d.terms.investorCut) parts.push(`${from?.name} backs ${t?.name} for ${Math.round(d.terms.investorCut * 100)}%`);
-    return parts.join(" · ") || "favor";
-  };
+  const dealSummary = (d: Deal) => summarizeDeal(d, table);
 
   return (
     <div className="stage-panel trade-view" aria-label="Deals">
@@ -242,9 +212,16 @@ export function TradePanel() {
                   <div className="tiny muted">{d.standing ? "standing" : "one-off"} · {d.toPlayerId === playerId ? "they proposed to you" : "you proposed"}</div>
                 </div>
                 {d.toPlayerId === playerId && !d.confirmedTo ? (
-                  <button className="btn btn-sm btn-go" onClick={() => dispatch({ type: "confirmDeal", playerId, dealId: d.id })}>Accept</button>
-                ) : <span className="tag">sent</span>}
-                <button className="btn btn-sm btn-danger" onClick={() => dispatch({ type: "cancelDeal", playerId, dealId: d.id })}>✕</button>
+                  <>
+                    <button className="btn btn-sm btn-go" onClick={() => dispatch({ type: "confirmDeal", playerId, dealId: d.id })}>Accept</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => dispatch({ type: "declineDeal", playerId, dealId: d.id })}>Decline</button>
+                  </>
+                ) : (
+                  <>
+                    <span className="tag">sent</span>
+                    <button className="btn btn-sm btn-danger" onClick={() => dispatch({ type: "cancelDeal", playerId, dealId: d.id })}>✕</button>
+                  </>
+                )}
               </div>
             ))}
 

@@ -15,7 +15,10 @@ export function OffSwitchOverlay({ onClose }: { onClose: () => void }) {
     <div className="event-overlay">
       <div className={`offswitch-card card offset ${roll.triggered ? "c-orange" : "c-green"}`}>
         <button className="event-x btn btn-sm btn-ghost" onClick={onClose} aria-label="Dismiss"><X size={16} /></button>
-        <div className="event-kicker mono upper tiny"><Term id="off-switch">Off-switch</Term> die · trigger {CONFIG.offSwitch.triggerMin}–6</div>
+        <div className="event-kicker mono upper tiny">End of round {roll.round} · the cut-off roll</div>
+        <p className="tiny muted" style={{ margin: "0 0 0.4rem" }}>
+          Each round we roll a die. On a <b>{CONFIG.offSwitch.triggerMin}, 5 or 6</b>, a foreign power "<Term id="off-switch">switches off</Term>" tech you rent or borrow. Owning your stack keeps you safe.
+        </p>
         <div className="dice-row">
           {roll.rolls.map((v, i) => {
             const Die = DICE[v] ?? DICE[1];
@@ -25,8 +28,8 @@ export function OffSwitchOverlay({ onClose }: { onClose: () => void }) {
 
         {!roll.triggered ? (
           <>
-            <h2 className="event-name">The lever doesn't fall</h2>
-            <p className="event-flavor">A low roll. No move from the adversary this round — exposed stacks live to gamble another day.</p>
+            <h2 className="event-name">No one got cut off</h2>
+            <p className="event-flavor">The dice came up low, so no foreign power pulled the plug this round. Anyone leaning on rented or foreign tech got lucky — this time.</p>
           </>
         ) : outcome ? (
           <>

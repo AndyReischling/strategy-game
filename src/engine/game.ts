@@ -598,22 +598,30 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
         terms: { ...action.terms, fillsGap: action.terms.fillsGap || !!action.terms.grantsPrecondition },
         standing: action.standing,
         confirmedFrom: true,
-        confirmedTo: !to.isHuman, // bots auto-accept reasonable offers? keep manual: false unless bot
+        confirmedTo: false,
         roundCreated: table.round,
         active: false,
       };
-      // bots auto-accept deals that give them credits or cost them nothing
-      if (!to.isHuman) {
-        const c = action.terms.creditsFromTo ?? 0;
-        deal.confirmedTo = c >= 0 || !!action.terms.assetId;
-      }
       from.actionThisRound = "deal"; // proposing a deal is your action this round
       table.deals.push(deal);
-      if (deal.confirmedFrom && deal.confirmedTo) {
-        deal.active = true;
-        executeDealOnce(table, deal);
-        recomputeUnlocks(table);
-        pushLog(table, "deal", `${from.name} ${deal.standing ? "+ standing deal +" : "↔"} ${to.name}.`);
+
+      if (!to.isHuman) {
+        // Bots answer instantly: accept anything that nets them cash or a free
+        // asset and they can afford; otherwise decline (and refund the proposer).
+        const net = action.terms.creditsFromTo ?? 0; // >0 means the bot is paid
+        const canAfford = net >= 0 || to.credits >= -net;
+        const accept = canAfford && (net >= 0 || !!action.terms.assetId);
+        if (accept) {
+          deal.confirmedTo = true;
+          deal.active = true;
+          executeDealOnce(table, deal);
+          recomputeUnlocks(table);
+          pushLog(table, "deal", `${to.name} accepted ${from.name}'s offer.`);
+        } else {
+          deal.declined = true;
+          from.actionThisRound = null; // a declined offer doesn't burn your turn
+          pushLog(table, "deal", `${to.name} declined ${from.name}'s offer.`);
+        }
       }
       break;
     }
@@ -631,6 +639,20 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
         const t = findPlayer(table, deal.toPlayerId);
         pushLog(table, "deal", `${f?.name} ${deal.standing ? "+ standing deal +" : "↔"} ${t?.name}.`);
       }
+      break;
+    }
+    case "declineDeal": {
+      const deal = table.deals.find((d) => d.id === action.dealId);
+      if (!deal || deal.active || deal.declined) break;
+      // refund the proposer's action — a turned-down offer shouldn't burn a turn
+      const proposer = findPlayer(table, deal.fromPlayerId);
+      if (proposer && deal.roundCreated === table.round && proposer.actionThisRound === "deal") {
+        proposer.actionThisRound = null;
+      }
+      deal.declined = true;
+      deal.active = false;
+      const t = findPlayer(table, deal.toPlayerId);
+      pushLog(table, "deal", `${t?.name} declined ${proposer?.name}'s offer.`);
       break;
     }
     case "cancelDeal": {
@@ -653,6 +675,18 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       // The off-switch dice and the new world event surface as overlays in the
       // UI — there are no manual phase steps anymore.
       if (table.phase === "lobby" || table.phase === "final") break;
+
+      // a deal proposed to a human must be answered before the round can end
+      const awaitingHuman = table.deals.some((d) => {
+        if (d.active || d.broken || d.declined || d.confirmedTo) return false;
+        if (d.roundCreated !== table.round) return false;
+        const recipient = findPlayer(table, d.toPlayerId);
+        return !!recipient?.isHuman;
+      });
+      if (awaitingHuman) {
+        error = "A deal is still awaiting a response — that player must accept or decline first.";
+        break;
+      }
 
       // lock built layers at the end of the round
       for (const p of table.players) {

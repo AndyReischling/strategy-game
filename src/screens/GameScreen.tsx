@@ -13,6 +13,7 @@ import { ScorePanel } from "../components/panels/ScorePanel";
 import { EventCard } from "../components/panels/EventCard";
 import { OffSwitchOverlay } from "../components/panels/OffSwitchOverlay";
 import { InspectOverlay } from "../components/panels/InspectOverlay";
+import { IncomingDealModal } from "../components/panels/IncomingDealModal";
 import { LeaderboardPanel } from "../components/panels/LeaderboardPanel";
 import { FinalScreen } from "./FinalScreen";
 import { credits } from "../components/util";
@@ -141,6 +142,7 @@ export function GameScreen() {
       {pendingRoll && <OffSwitchOverlay onClose={() => setSeenRollRound(table.lastRoll!.round)} />}
       {pendingEvent && <EventCard onClose={() => setSeenEventRound(table.round)} />}
       <InspectOverlay />
+      <IncomingDealModal />
       {showLeaderboard && <LeaderboardPanel />}
     </div>
   );
