@@ -1,14 +1,18 @@
+import { useState } from "react";
 import { useGame } from "../../store/useGame";
 import { EVENT_BY_ID } from "../../data/events";
 import { Term } from "../Term";
+import { X, Check } from "../icons";
 
 export function EventCard() {
   const table = useGame((s) => s.table)!;
+  const [dismissed, setDismissed] = useState(false);
   const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
-  if (!event) return null;
+  if (!event || dismissed) return null;
   return (
     <div className="event-overlay">
       <div className="event-card card offset c-orange">
+        <button className="event-x btn btn-sm btn-ghost" onClick={() => setDismissed(true)} aria-label="Dismiss"><X size={16} /></button>
         <div className="event-kicker mono upper tiny">Round {table.round} · World event</div>
         <h2 className="event-name">{event.name}</h2>
         <p className="event-flavor">“{event.flavor}”</p>
@@ -22,6 +26,7 @@ export function EventCard() {
           </div>
         )}
         <p className="tiny muted">The same card is drawn for every table this round, so the leaderboard stays fair.</p>
+        <button className="btn btn-go event-continue" onClick={() => setDismissed(true)}>Got it, continue <Check size={16} /></button>
       </div>
     </div>
   );

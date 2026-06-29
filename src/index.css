@@ -185,6 +185,8 @@ svg.ph { vertical-align: -0.15em; flex: none; }
   text-decoration: none;
 }
 .term:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+/* inside pills / chips / tags the dotted underline reads as clutter — drop it */
+.tag .term, .chip-tag .term, .meter .term, .seat-chip .term { border-bottom: none; }
 
 .term-card {
   position: fixed;

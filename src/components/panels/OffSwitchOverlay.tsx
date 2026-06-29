@@ -1,19 +1,22 @@
+import { useState } from "react";
 import { useGame } from "../../store/useGame";
 import { OUTCOME_BY_ID } from "../../data/events";
 import { REGION_BY_ID } from "../../data/regions";
 import { CONFIG } from "../../data/config";
 import { Term } from "../Term";
-import { DICE, Check, Warning } from "../icons";
+import { DICE, Check, Warning, X } from "../icons";
 
 export function OffSwitchOverlay() {
   const table = useGame((s) => s.table)!;
+  const [dismissed, setDismissed] = useState(false);
   const roll = table.lastRoll;
-  if (!roll) return null;
+  if (!roll || dismissed) return null;
   const outcome = roll.outcomeId ? OUTCOME_BY_ID[roll.outcomeId] : undefined;
 
   return (
     <div className="event-overlay">
       <div className={`offswitch-card card offset ${roll.triggered ? "c-orange" : "c-green"}`}>
+        <button className="event-x btn btn-sm btn-ghost" onClick={() => setDismissed(true)} aria-label="Dismiss"><X size={16} /></button>
         <div className="event-kicker mono upper tiny"><Term id="off-switch">Off-switch</Term> die · trigger {CONFIG.offSwitch.triggerMin}–6</div>
         <div className="dice-row">
           {roll.rolls.map((v, i) => {
@@ -55,6 +58,7 @@ export function OffSwitchOverlay() {
         {table.brokenDeals && table.brokenDeals.length > 0 && (
           <p className="tiny warn-text">A standing deal snapped under the pressure — both sides paid a penalty.</p>
         )}
+        <button className="btn btn-go event-continue" onClick={() => setDismissed(true)}>Got it, continue <Check size={16} /></button>
       </div>
     </div>
   );
