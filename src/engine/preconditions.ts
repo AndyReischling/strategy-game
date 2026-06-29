@@ -49,6 +49,15 @@ const NEEDS_LABEL: Record<Precondition, string> = {
   "oss-grant": "an OSS Commons player at the table, willing to grant",
 };
 
+/** Does this player already satisfy `req` (and could therefore grant it in a deal)? */
+export function playerCanGrant(p: Player, req: Precondition): boolean {
+  if (req === "none") return false;
+  if (req === "asml-token") return p.assets.includes("asml-token");
+  if (req === "supply-allocation")
+    return p.assets.includes("asml-token") || p.unlocks.includes(req) || regionInherentUnlocks(p.regionId).includes(req);
+  return p.unlocks.includes(req) || regionInherentUnlocks(p.regionId).includes(req);
+}
+
 export function canBuild(player: Player, option: LayerOption): BuildCheck {
   const req = option.requires;
   if (req === "none") return { ok: true };

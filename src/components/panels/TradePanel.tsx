@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGame } from "../../store/useGame";
 import { REGION_BY_ID } from "../../data/regions";
 import { Term } from "../Term";
@@ -61,6 +61,18 @@ export function TradePanel() {
   const [investorCut, setInvestorCut] = useState(0);
   const [pitch, setPitch] = useState("");
   const [pitching, setPitching] = useState(false);
+
+  // a blocked build can hand us a pre-filled deal (partner + access/asset + target)
+  const dealDraft = useGame((s) => s.dealDraft);
+  const setDealDraft = useGame((s) => s.setDealDraft);
+  useEffect(() => {
+    if (!dealDraft) return;
+    if (dealDraft.toId) setToId(dealDraft.toId);
+    setKind(dealDraft.kind);
+    if (dealDraft.precond) setPrecond(dealDraft.precond);
+    if (dealDraft.assetId) setAssetId(dealDraft.assetId);
+    setDealDraft(null); // consume once
+  }, [dealDraft, setDealDraft]);
 
   if (!me) return null;
   const to = table.players.find((p) => p.id === toId);

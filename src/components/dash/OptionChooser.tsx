@@ -3,11 +3,11 @@ import { LAYER_BY_ID } from "../../data/layers";
 import { REGION_BY_ID } from "../../data/regions";
 import { EVENT_BY_ID } from "../../data/events";
 import { priceFor } from "../../engine/pricing";
-import { canBuild } from "../../engine/preconditions";
+import { canBuild, playerCanGrant } from "../../engine/preconditions";
 import { Term } from "../Term";
 import { GLOSSARY_BY_ID } from "../../data/glossary";
 import { credits } from "../util";
-import { LAYER_ICON, Warning, Prohibit, ArrowsClockwise, TrendUp, ShieldCheck, Check, X } from "../icons";
+import { LAYER_ICON, Warning, Prohibit, ArrowsClockwise, TrendUp, ShieldCheck, Check, X, ArrowRight } from "../icons";
 import type { LayerId, LayerOption } from "../../data/types";
 
 function Meter({ value, kind }: { value: number; kind: "adopt" | "sov" }) {
@@ -29,8 +29,11 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
   const table = useGame((s) => s.table)!;
   const playerId = useGame((s) => s.playerId);
   const dispatch = useGame((s) => s.dispatch);
+  const setDealDraft = useGame((s) => s.setDealDraft);
   const me = table.players.find((p) => p.id === playerId);
   if (!me) return null;
+
+  const others = table.players.filter((p) => p.ready && p.id !== me.id);
 
   const region = REGION_BY_ID[me.regionId];
   const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
@@ -104,7 +107,35 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
                   <span key={i} className={`badge badge-${b.tone}`}><Term id="price-shift">{b.text}</Term></span>
                 ))}</div>
               )}
-              {!check.ok && <div className="oc-need tiny warn-text">Requires {check.needs}{check.dealable ? " — strike a deal." : "."}</div>}
+              {!check.ok && (
+                <div className="oc-need tiny">
+                  <div className="warn-text"><b>Locked</b> — needs {check.needs}.</div>
+                  {check.dealable && (() => {
+                    const req = opt.requires;
+                    const granters = others.filter((p) => playerCanGrant(p, req));
+                    const isAsmlAsset = req === "asml-token";
+                    const partner = granters[0] ?? others[0];
+                    const fix = () => {
+                      if (isAsmlAsset) setDealDraft({ toId: partner?.id, kind: "asset", assetId: "asml-token" });
+                      else setDealDraft({ toId: partner?.id, kind: "access", precond: req });
+                    };
+                    return (
+                      <div className="oc-fix">
+                        <span className="oc-fix-text">
+                          {granters.length > 0
+                            ? <><b>How to unlock:</b> {granters.map((g) => `${REGION_BY_ID[g.regionId]?.flag ?? ""} ${g.name}`).join(", ")} can grant this — propose {isAsmlAsset ? "an asset deal for the ASML token" : "an access deal"}.</>
+                            : <><b>How to unlock:</b> propose {isAsmlAsset ? "an asset deal for the ASML token" : "an access deal"} — no one can grant it yet, so you may need to negotiate or wait for a region that can.</>}
+                        </span>
+                        {partner && (
+                          <button type="button" className="btn btn-sm btn-go oc-fix-btn" onClick={fix}>
+                            Set up this deal <ArrowRight size={13} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
               {price.frozen && <div className="oc-need tiny warn-text">Frozen this round by the world event.</div>}
 
               <div className="oc-action">

@@ -454,6 +454,9 @@ button.stack-block { cursor: pointer; }
 .chip-tag.warn { background: var(--orange); color: var(--cream); }
 .oc-badges { display: flex; flex-wrap: wrap; gap: 0.25rem; }
 .oc-need { margin-top: 0.1rem; }
+.oc-fix { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem; padding: 0.45rem 0.5rem; border: 2px dashed var(--ink); border-radius: var(--radius); background: var(--cream); }
+.oc-fix-text { line-height: 1.35; }
+.oc-fix-btn { align-self: flex-start; }
 .oc-action { margin-top: 0.4rem; }
 
 /* Rivals */

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { TableState, LeaderboardRow, LayerId } from "../data/types";
+import type { TableState, LeaderboardRow, LayerId, DealKind, Precondition, AssetId } from "../data/types";
 import type { GameAction } from "../engine/actions";
 import { newTable, applyAction } from "../engine/game";
 import { buildLeaderboard } from "../engine/leaderboard";
@@ -51,6 +51,8 @@ interface GameStore {
   selectedLayer: LayerId | null;
   inspectPlayerId: string | null;
   inspectOpen: boolean;
+  // a pre-filled deal request (e.g. from a blocked build) that jumps to Deals
+  dealDraft: { toId?: string; kind: DealKind; precond?: Precondition; assetId?: AssetId } | null;
   showGlossary: boolean;
   showLeaderboard: boolean;
   showHowTo: boolean;
@@ -60,6 +62,7 @@ interface GameStore {
   setSelectedLayer: (l: LayerId | null) => void;
   setInspect: (id: string | null) => void;
   closeInspect: () => void;
+  setDealDraft: (d: GameStore["dealDraft"]) => void;
   toggleGlossary: (v?: boolean) => void;
   toggleLeaderboard: (v?: boolean) => void;
   toggleHowTo: (v?: boolean) => void;
@@ -89,6 +92,7 @@ export const useGame = create<GameStore>((set, get) => ({
   selectedLayer: null,
   inspectPlayerId: null,
   inspectOpen: false,
+  dealDraft: null,
   showGlossary: false,
   showLeaderboard: false,
   showHowTo: false,
@@ -98,6 +102,7 @@ export const useGame = create<GameStore>((set, get) => ({
   setSelectedLayer: (l) => set({ selectedLayer: l }),
   setInspect: (id) => set({ inspectPlayerId: id, inspectOpen: id != null }),
   closeInspect: () => set({ inspectOpen: false }),
+  setDealDraft: (d) => set({ dealDraft: d }),
   toggleGlossary: (v) => set((s) => ({ showGlossary: v ?? !s.showGlossary })),
   toggleLeaderboard: (v) => set((s) => ({ showLeaderboard: v ?? !s.showLeaderboard })),
   toggleHowTo: (v) => set((s) => ({ showHowTo: v ?? !s.showHowTo })),

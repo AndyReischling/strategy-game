@@ -37,12 +37,18 @@ export function GameScreen() {
   const [seenRollRound, setSeenRollRound] = useState(0);
   const [seenEventRound, setSeenEventRound] = useState(0);
 
+  const dealDraft = useGame((s) => s.dealDraft);
   const me = table.players.find((p) => p.id === playerId);
 
   // start each round on the Build tab; players can switch to Deals/Score freely
   useEffect(() => {
     setTab("build");
   }, [table.round]);
+
+  // a blocked build can request a pre-filled deal — jump to the Deals tab
+  useEffect(() => {
+    if (dealDraft) setTab("trade");
+  }, [dealDraft]);
 
   // Host generates real-world-grounded event flavor once per game (Claude).
   const flavorGen = useRef(false);
