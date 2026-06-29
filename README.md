@@ -23,11 +23,29 @@ The dev server already binds to your LAN. On each phone visit `http://<your-comp
 
 ### Deploying for a 40+ person event
 
-The server serves the built client **and** the WebSocket on one origin, so the
-simplest deploy is a **single service** — online multiplayer works with no extra
-config (the client connects right back to wherever it's served).
+The realtime backend is pluggable. Pick whichever host you prefer:
 
-**Option A — one service (recommended).** Build then run the server:
+**Option A — Vercel + Firebase (works fully on Vercel; no server to run).**
+Rooms-by-code via Firebase Realtime Database, host-authoritative (the host's
+browser runs the engine and writes table state; everyone else reads it and
+pushes their actions). Setup:
+
+1. Create a Firebase project → add a **Web App** → enable **Realtime Database**.
+2. For a one-off event, set the RTDB rules to open (or scope to `tables`/`leaderboard`):
+   ```json
+   { "rules": { ".read": true, ".write": true } }
+   ```
+3. Copy the web config into env vars (see `.env.example`) and set the same
+   `VITE_FIREBASE_*` values in Vercel → Project → Settings → Environment Variables.
+4. Deploy the client to Vercel (the included `vercel.json` configures the Vite build).
+
+When `VITE_FIREBASE_*` is present the client uses Firebase automatically; the
+Firebase SDK is code-split and only loaded then. (Note: the host/facilitator's
+browser must stay open for that table — it's the authority.)
+
+**Option B — one Node service (no Firebase).** The server serves the built
+client **and** the WebSocket on one origin, so multiplayer works with no extra
+config. Build then run the server:
 
 ```bash
 npm run build && npm run server   # serves the app + WS on $PORT (default 8787)
@@ -37,17 +55,17 @@ npm run build && npm run server   # serves the app + WS on $PORT (default 8787)
 - **Docker** (Fly.io / Railway / Cloud Run / a VPS): the included `Dockerfile` builds and runs everything. The platform's `PORT` is honored.
 - Pin a fixed world-event sequence with `EVENT_SEED=<number>`.
 
-**Option B — split (static client on Vercel + server elsewhere).** Deploy the
-client to Vercel (the included `vercel.json` sets the Vite build), deploy the
-server separately (Option A), and tell the client where the server is at build
-time:
+**Option C — split (static client on Vercel + your own WS server elsewhere).**
+Deploy the client to Vercel, run the server separately (Option B), and point the
+client at it at build time:
 
 ```bash
 VITE_WS_URL=wss://your-server.example.com   # set as a Vercel env var
 ```
 
-> A plain static deploy with **no** reachable server still runs **Practice solo**
-> (the engine runs in-browser); only online multiplayer needs the server.
+> Transport selection: `VITE_FIREBASE_*` present → Firebase; else `VITE_WS_URL`
+> (or `:8787` in dev) → the bundled WS server. A plain static deploy with no
+> backend at all still runs **Practice solo** (the engine runs in-browser).
 
 ## Multiplayer architecture (§9 Path A)
 

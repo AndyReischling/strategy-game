@@ -3,7 +3,8 @@ import type { TableState, LeaderboardRow, LayerId } from "../data/types";
 import type { GameAction } from "../engine/actions";
 import { newTable, applyAction } from "../engine/game";
 import { buildLeaderboard } from "../engine/leaderboard";
-import { GameSocket } from "../net/socket";
+import { GameSocket, type Sync } from "../net/socket";
+import { isFirebaseConfigured } from "../net/fbConfig";
 
 type Transport = "none" | "online" | "local";
 
@@ -31,7 +32,7 @@ function writeUrl(code: string, playerId: string, name: string) {
   history.replaceState(null, "", `${location.pathname}?${q.toString()}`);
 }
 
-let socket: GameSocket | null = null;
+let sync: Sync | null = null;
 let noticeTimer: ReturnType<typeof setTimeout> | null = null;
 
 interface GameStore {
@@ -101,16 +102,26 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ transport: "online", code: code.toUpperCase(), name, playerId });
     writeUrl(code.toUpperCase(), playerId, name);
 
-    socket?.close();
-    socket = new GameSocket({
+    sync?.close();
+    const handlers = {
       onOpen: () => set({ connected: true, error: null }),
       onClose: () => set({ connected: false }),
-      onState: (table) => set({ table }),
-      onLeaderboard: (rows) => set({ leaderboard: rows }),
-      onError: (message) => get().setNotice(message),
-      onJoined: (pid) => set({ playerId: pid, inspectPlayerId: pid }),
-    });
-    socket.connect(code.toUpperCase(), playerId, name);
+      onState: (table: TableState) => set({ table }),
+      onLeaderboard: (rows: LeaderboardRow[]) => set({ leaderboard: rows }),
+      onError: (message: string) => get().setNotice(message),
+      onJoined: (pid: string) => set({ playerId: pid, inspectPlayerId: pid, connected: true }),
+    };
+    // Managed backend (Firebase) when configured; otherwise the bundled WS server.
+    // Firebase is code-split — only loaded when actually used.
+    if (isFirebaseConfigured()) {
+      import("../net/firebase").then(({ FirebaseSync }) => {
+        sync = new FirebaseSync(handlers);
+        sync.connect(code.toUpperCase(), playerId, name);
+      });
+    } else {
+      sync = new GameSocket(handlers);
+      sync.connect(code.toUpperCase(), playerId, name);
+    }
   },
 
   startLocal: (name) => {
@@ -132,7 +143,7 @@ export const useGame = create<GameStore>((set, get) => ({
   dispatch: (action) => {
     const { transport, table } = get();
     if (transport === "online") {
-      socket?.dispatch(action);
+      sync?.dispatch(action);
       return;
     }
     if (transport === "local" && table) {
@@ -149,8 +160,8 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   leave: () => {
-    socket?.close();
-    socket = null;
+    sync?.close();
+    sync = null;
     set({ transport: "none", connected: false, table: null, leaderboard: [] });
     history.replaceState(null, "", location.pathname);
   },

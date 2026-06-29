@@ -14,7 +14,7 @@ export function wsUrl(): string {
   return `${proto}://${location.host}`;
 }
 
-type Handlers = {
+export type SyncHandlers = {
   onState?: (table: TableState) => void;
   onLeaderboard?: (rows: LeaderboardRow[]) => void;
   onError?: (message: string) => void;
@@ -23,8 +23,17 @@ type Handlers = {
   onClose?: () => void;
 };
 
+/** Common transport interface: a realtime backend the store talks to. */
+export interface Sync {
+  connect(code: string, playerId: string, name: string): void;
+  dispatch(action: import("../engine/actions").GameAction): void;
+  close(): void;
+}
+
+type Handlers = SyncHandlers;
+
 /** Thin reconnecting WebSocket client for the authoritative server. */
-export class GameSocket {
+export class GameSocket implements Sync {
   private ws: WebSocket | null = null;
   private url: string;
   private handlers: Handlers;
