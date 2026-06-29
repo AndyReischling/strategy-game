@@ -163,9 +163,15 @@ export function TradePanel() {
             <p className="tiny muted">Two sentences on why to fund your stack. {llmEnabled() ? "A real VC reads your pitch — a sharp one can win funding even for a middling stack." : "The VC backs a coherent, defensible plan — and turns down a weak or over-exposed one."} <b className="warn-text">A pitch is your whole turn: get declined and you've burned the round.</b></p>
             <textarea className="pitch-box" rows={3} maxLength={240} value={pitch} onChange={(e) => setPitch(e.target.value)} placeholder="In two sentences: what are you building, and why is it the one to back?" />
             <button className="btn btn-go" style={{ width: "100%" }} disabled={!!me.actionThisRound || pitch.trim().length < 12 || pitching} onClick={onPitch}>
-              {pitching ? "Pitching…" : "Pitch to the VC →"}
+              {pitching ? "The VC is pondering…" : "Pitch to the VC →"}
             </button>
-            {me.pitch && me.pitch.round === table.round && (
+            {pitching && (
+              <div className="vc-pondering">
+                <span className="vc-dots"><i /><i /><i /></span>
+                <span>The VC reads your pitch, sizes up your stack…</span>
+              </div>
+            )}
+            {!pitching && me.pitch && me.pitch.round === table.round && (
               <div className={`pitch-result ${me.pitch.funded ? "funded" : "declined"}`}>
                 {me.pitch.funded
                   ? <span className="row gap-1"><Check size={14} /> <span><b>Funded {credits(me.pitch.amount)}.</b> {me.pitch.reason}</span></span>

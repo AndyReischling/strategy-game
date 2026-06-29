@@ -11,6 +11,25 @@ export function llmEnabled(): boolean {
   return import.meta.env.VITE_LLM_ENABLED === "true";
 }
 
+export interface LlmStatus {
+  enabled: boolean;
+  keyPresent: boolean;
+  model?: string;
+}
+
+/** Is the AI on, and is the server key actually set? Cheap probe (no LLM call). */
+export async function checkLlm(): Promise<LlmStatus> {
+  if (!llmEnabled()) return { enabled: false, keyPresent: false };
+  try {
+    const res = await fetch("/api/health");
+    if (!res.ok) return { enabled: true, keyPresent: false };
+    const j = (await res.json()) as { keyPresent?: boolean; model?: string };
+    return { enabled: true, keyPresent: !!j.keyPresent, model: j.model };
+  } catch {
+    return { enabled: true, keyPresent: false };
+  }
+}
+
 /** Compact, model-friendly description of a player's stack for the VC. */
 export function stackSummary(player: Player) {
   const region = REGION_BY_ID[player.regionId];

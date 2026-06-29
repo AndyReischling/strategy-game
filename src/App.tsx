@@ -6,15 +6,18 @@ import { GameScreen } from "./screens/GameScreen";
 import { Toast } from "./components/Toast";
 import { GlossaryDrawer } from "./components/GlossaryDrawer";
 import { HowToPlay } from "./components/HowToPlay";
+import { LlmBanner } from "./components/LlmBanner";
 
 export function App() {
   const transport = useGame((s) => s.transport);
   const table = useGame((s) => s.table);
   const tryAutoRejoin = useGame((s) => s.tryAutoRejoin);
+  const refreshLlmStatus = useGame((s) => s.refreshLlmStatus);
 
   useEffect(() => {
     tryAutoRejoin();
-  }, [tryAutoRejoin]);
+    refreshLlmStatus();
+  }, [tryAutoRejoin, refreshLlmStatus]);
 
   let screen;
   if (transport === "none" || !table) {
@@ -28,6 +31,7 @@ export function App() {
   return (
     <>
       {screen}
+      <LlmBanner />
       <Toast />
       <GlossaryDrawer />
       <HowToPlay />

@@ -5,6 +5,7 @@ import { newTable, applyAction } from "../engine/game";
 import { buildLeaderboard } from "../engine/leaderboard";
 import { GameSocket, type Sync } from "../net/socket";
 import { isFirebaseConfigured } from "../net/fbConfig";
+import { checkLlm, type LlmStatus } from "../net/llm";
 
 type Transport = "none" | "online" | "local";
 
@@ -52,12 +53,16 @@ interface GameStore {
   showGlossary: boolean;
   showLeaderboard: boolean;
   showHowTo: boolean;
+  llmStatus: LlmStatus | null;
+  llmBannerDismissed: boolean;
 
   setSelectedLayer: (l: LayerId | null) => void;
   setInspect: (id: string | null) => void;
   toggleGlossary: (v?: boolean) => void;
   toggleLeaderboard: (v?: boolean) => void;
   toggleHowTo: (v?: boolean) => void;
+  refreshLlmStatus: () => void;
+  dismissLlmBanner: () => void;
   setNotice: (msg: string | null) => void;
 
   joinOnline: (code: string, name: string) => void;
@@ -84,12 +89,18 @@ export const useGame = create<GameStore>((set, get) => ({
   showGlossary: false,
   showLeaderboard: false,
   showHowTo: false,
+  llmStatus: null,
+  llmBannerDismissed: false,
 
   setSelectedLayer: (l) => set({ selectedLayer: l }),
   setInspect: (id) => set({ inspectPlayerId: id }),
   toggleGlossary: (v) => set((s) => ({ showGlossary: v ?? !s.showGlossary })),
   toggleLeaderboard: (v) => set((s) => ({ showLeaderboard: v ?? !s.showLeaderboard })),
   toggleHowTo: (v) => set((s) => ({ showHowTo: v ?? !s.showHowTo })),
+  refreshLlmStatus: () => {
+    checkLlm().then((llmStatus) => set({ llmStatus }));
+  },
+  dismissLlmBanner: () => set({ llmBannerDismissed: true }),
   setNotice: (msg) => {
     set({ notice: msg });
     if (noticeTimer) clearTimeout(noticeTimer);
