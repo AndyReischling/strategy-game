@@ -349,6 +349,7 @@ export interface TableState {
   deals: Deal[];
   /** off-switch results this round, for board reactions */
   lastRoll?: {
+    round: number;
     rolls: number[];
     triggered: boolean;
     outcomeId?: string;

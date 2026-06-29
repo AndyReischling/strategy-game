@@ -1,17 +1,7 @@
 import { useGame } from "../../store/useGame";
 import { CONFIG } from "../../data/config";
-import { PHASE_ORDER } from "../../engine/actions";
-import { ArrowRight, Check, Megaphone, Hammer, Handshake, Power, Sparkle, ShoppingCart } from "../icons";
-import type { Icon } from "../icons";
-
-const PHASE_META: Record<string, { label: string; icon: Icon; hint: string }> = {
-  "market-open": { label: "Market", icon: ShoppingCart, hint: "Prices are posted with this round's modifiers. You already have your budget." },
-  "world-event": { label: "Event", icon: Megaphone, hint: "One card flips for the whole table — it sets the round's weather." },
-  build: { label: "Build", icon: Hammer, hint: "Your one action this round: buy a piece of infrastructure (one layer) — or spend it on a VC pitch or a deal instead." },
-  trade: { label: "Trade", icon: Handshake, hint: "Spend your action on ONE deal or a VC pitch; accepting offers others send you is always free." },
-  "off-switch": { label: "Off-switch", icon: Power, hint: "The adversary's move. Exposed stacks crack; sovereign ones shrug it off." },
-  score: { label: "Score", icon: Sparkle, hint: "Running scores update and write to the live leaderboard." },
-};
+import { ArrowRight, TrendUp, ShieldCheck, Handshake } from "../icons";
+import { Term } from "../Term";
 
 export function PhaseRail() {
   const table = useGame((s) => s.table)!;
@@ -19,14 +9,15 @@ export function PhaseRail() {
   const transport = useGame((s) => s.transport);
   const dispatch = useGame((s) => s.dispatch);
   const isHost = table.hostId === playerId || transport === "local";
+  const me = table.players.find((p) => p.id === playerId);
 
-  const currentIdx = PHASE_ORDER.indexOf(table.phase as (typeof PHASE_ORDER)[number]);
-  const meta = PHASE_META[table.phase];
-
-  const advanceLabel =
-    table.phase === "score"
-      ? table.round < CONFIG.totalRounds ? "Begin next round" : "See final results"
-      : `Go to ${PHASE_META[PHASE_ORDER[currentIdx + 1]]?.label ?? "next"}`;
+  // bots take their single action automatically at round start, so they always
+  // count as "moved"; we only wait on human players.
+  const ready = table.players.filter((p) => p.ready);
+  const moved = ready.filter((p) => p.actionThisRound || !p.isHuman).length;
+  const waiting = ready.length - moved;
+  const allMoved = waiting === 0;
+  const lastRound = table.round >= CONFIG.totalRounds;
 
   return (
     <div className="phase-rail">
@@ -35,29 +26,45 @@ export function PhaseRail() {
         <span className="pr-round-n display">{table.round}<span className="muted">/{CONFIG.totalRounds}</span></span>
       </div>
 
-      <ol className="pr-steps">
-        {PHASE_ORDER.map((ph, i) => {
-          const m = PHASE_META[ph];
-          const Icon = m.icon;
-          const state = i < currentIdx ? "done" : i === currentIdx ? "now" : "next";
-          return (
-            <li key={ph} className={`pr-step ${state}`}>
-              <span className="pr-bullet">{state === "done" ? <Check size={13} /> : <Icon size={14} />}</span>
-              <span className="pr-label">{m.label}</span>
-            </li>
-          );
-        })}
-      </ol>
+      {me && (
+        <div className="pr-score">
+          <span className="tiny upper muted">Your score</span>
+          <span className="pr-score-n display tnum">{me.score.final}</span>
+          <div className="pr-score-parts tiny">
+            <span title="Adoption (users)"><TrendUp size={13} /> {me.score.rawAdoption}</span>
+            <span title="Sovereignty multiplier"><ShieldCheck size={13} /> ×{me.score.sovereignty.toFixed(2)}</span>
+            <span title="Deal points"><Handshake size={13} /> {me.score.deals}</span>
+          </div>
+        </div>
+      )}
 
-      {meta && <p className="pr-hint tiny">{meta.hint}</p>}
+      <p className="pr-hint tiny">
+        Take your <b>one action</b> this round — build a layer, strike a deal, or pitch a VC — anywhere across your stack. When everyone's moved, the round ends: the <Term id="off-switch">off-switch</Term> dice roll and scores update.
+      </p>
+
+      {ready.length > 0 && (
+        <div className={`pr-turns ${allMoved ? "done" : "waiting"}`}>
+          {allMoved ? `Everyone's moved (${moved}/${ready.length})` : `${moved}/${ready.length} have moved`}
+        </div>
+      )}
 
       <div className="pr-advance">
         {isHost ? (
-          <button className="btn btn-go" onClick={() => dispatch({ type: "advancePhase", playerId })}>
-            {advanceLabel} <ArrowRight size={16} />
-          </button>
+          <>
+            <span className="pr-advance-cap tiny upper muted">{lastRound ? "Finish the game" : "End the round"}</span>
+            <button
+              className="btn btn-go"
+              onClick={() => dispatch({ type: "advancePhase", playerId })}
+              disabled={!allMoved}
+            >
+              {lastRound ? "See final results" : `Next round (${table.round + 1})`} <ArrowRight size={16} />
+            </button>
+            {!allMoved && (
+              <span className="tiny warn-text pr-waiting">{waiting} {waiting === 1 ? "player" : "players"} still to move</span>
+            )}
+          </>
         ) : (
-          <span className="tiny muted">The host moves the table to the next step.</span>
+          <span className="tiny muted">{allMoved ? "The host starts the next round." : "Take your move — then the host ends the round."}</span>
         )}
       </div>
     </div>

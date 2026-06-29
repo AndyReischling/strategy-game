@@ -5,6 +5,7 @@ import { EVENT_BY_ID } from "../../data/events";
 import { priceFor } from "../../engine/pricing";
 import { canBuild } from "../../engine/preconditions";
 import { Term } from "../Term";
+import { GLOSSARY_BY_ID } from "../../data/glossary";
 import { credits } from "../util";
 import { LAYER_ICON, Warning, Prohibit, ArrowsClockwise, TrendUp, ShieldCheck, Check, X } from "../icons";
 import type { LayerId, LayerOption } from "../../data/types";
@@ -12,11 +13,15 @@ import type { LayerId, LayerOption } from "../../data/types";
 function Meter({ value, kind }: { value: number; kind: "adopt" | "sov" }) {
   const neg = value < 0;
   const Icon = kind === "adopt" ? TrendUp : ShieldCheck;
+  const label = kind === "adopt" ? "adoption" : "sovereignty";
   return (
-    <span className={`meter ${kind} ${neg ? "neg" : ""}`} title={`${kind === "adopt" ? "Adoption" : "Sovereignty"} ${value > 0 ? "+" : ""}${value}`}>
-      <Icon size={13} />
-      <b>{value > 0 ? `+${value}` : value}</b>
-    </span>
+    <Term id={kind === "adopt" ? "adoption" : "sovereignty"}>
+      <span className={`meter ${kind} ${neg ? "neg" : ""}`}>
+        <Icon size={13} />
+        <b>{value > 0 ? `+${value}` : value}</b>
+        <span className="meter-label">{label}</span>
+      </span>
+    </Term>
   );
 }
 
@@ -50,8 +55,8 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
       <div className="chooser-head">
         <span className="ch-step"><LIcon size={22} /></span>
         <div>
-          <div className="ch-title display">Step {layerDef.index}: <Term id={layer}>{layerDef.name}</Term></div>
-          <div className="tiny">{layerDef.question}</div>
+          <div className="ch-title display">Layer {layerDef.index} of 5: <Term id={layer}>{layerDef.name}</Term></div>
+          <div className="tiny">{layerDef.question} <span className="muted">· build the layers in any order you like</span></div>
         </div>
       </div>
 
@@ -76,8 +81,9 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
               <div className="oc-top">
                 <span className="oc-name">{opt.name}</span>
                 <span className="oc-price tnum">
-                  {price.cost !== opt.baseCost && <span className="base-strike">{credits(opt.baseCost)}</span>}
-                  <span className="now">{credits(price.cost)}</span>
+                  {price.cost !== opt.baseCost
+                    ? <Term id="list-price"><span className="base-strike">{credits(opt.baseCost)}</span><span className="now">{credits(price.cost)}</span></Term>
+                    : <span className="now">{credits(price.cost)}</span>}
                 </span>
               </div>
               {opt.actor && <div className="oc-actor tiny mono">{opt.actor}</div>}
@@ -87,14 +93,16 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
               <div className="oc-meta">
                 <Meter value={opt.adoption} kind="adopt" />
                 <Meter value={opt.sovereignty} kind="sov" />
-                {opt.exposure !== "none" && <span className="chip-tag warn"><Warning size={12} /> <Term id="exposure">exposed</Term></span>}
-                {opt.sanctionRisk && <span className="chip-tag warn"><Prohibit size={12} /> <Term id="sanction-risk">sanction</Term></span>}
-                {opt.recurring ? <span className="chip-tag"><ArrowsClockwise size={12} /> {credits(opt.recurring)}/rd</span> : null}
-                {opt.terms?.slice(0, 1).map((t) => <span key={t} className="chip-tag"><Term id={t} /></span>)}
+                {opt.exposure !== "none" && <Term id="exposure"><span className="chip-tag warn"><Warning size={12} /> exposed</span></Term>}
+                {opt.sanctionRisk && <Term id="sanction-risk"><span className="chip-tag warn"><Prohibit size={12} /> sanction</span></Term>}
+                {opt.recurring ? <Term id="recurring-cost"><span className="chip-tag"><ArrowsClockwise size={12} /> {credits(opt.recurring)}/rd</span></Term> : null}
+                {opt.terms?.slice(0, 1).map((t) => <Term key={t} id={t}><span className="chip-tag">{GLOSSARY_BY_ID[t]?.term ?? t}</span></Term>)}
               </div>
 
               {price.badges.length > 0 && (
-                <div className="oc-badges">{price.badges.map((b, i) => <span key={i} className="badge">{b}</span>)}</div>
+                <div className="oc-badges">{price.badges.map((b, i) => (
+                  <span key={i} className={`badge badge-${b.tone}`}><Term id="price-shift">{b.text}</Term></span>
+                ))}</div>
               )}
               {!check.ok && <div className="oc-need tiny warn-text">Requires {check.needs}{check.dealable ? " — strike a deal." : "."}</div>}
               {price.frozen && <div className="oc-need tiny warn-text">Frozen this round by the world event.</div>}

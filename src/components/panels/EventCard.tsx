@@ -1,14 +1,12 @@
-import { useState } from "react";
 import { useGame } from "../../store/useGame";
 import { EVENT_BY_ID } from "../../data/events";
 import { Term } from "../Term";
 import { X, Check } from "../icons";
 
-export function EventCard() {
+export function EventCard({ onClose }: { onClose: () => void }) {
   const table = useGame((s) => s.table)!;
-  const [dismissed, setDismissed] = useState(false);
   const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
-  if (!event || dismissed) return null;
+  if (!event) return null;
   // LLM-generated, real-world-grounded flavor (mechanics unchanged) if present
   const fx = table.eventId ? table.eventFlavor?.[table.eventId] : undefined;
   const name = fx?.name || event.name;
@@ -17,7 +15,7 @@ export function EventCard() {
   return (
     <div className="event-overlay">
       <div className="event-card card offset c-orange">
-        <button className="event-x btn btn-sm btn-ghost" onClick={() => setDismissed(true)} aria-label="Dismiss"><X size={16} /></button>
+        <button className="event-x btn btn-sm btn-ghost" onClick={onClose} aria-label="Dismiss"><X size={16} /></button>
         <div className="event-kicker mono upper tiny">Round {table.round} · World event{fx ? " · live" : ""}</div>
         <h2 className="event-name">{name}</h2>
         <p className="event-flavor">“{flavor}”</p>
@@ -31,7 +29,7 @@ export function EventCard() {
           </div>
         )}
         <p className="tiny muted">The same card is drawn for every table this round, so the leaderboard stays fair.</p>
-        <button className="btn btn-go event-continue" onClick={() => setDismissed(true)}>Got it, continue <Check size={16} /></button>
+        <button className="btn btn-go event-continue" onClick={onClose}>Got it, continue <Check size={16} /></button>
       </div>
     </div>
   );

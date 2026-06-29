@@ -50,6 +50,7 @@ interface GameStore {
   // UI-only state
   selectedLayer: LayerId | null;
   inspectPlayerId: string | null;
+  inspectOpen: boolean;
   showGlossary: boolean;
   showLeaderboard: boolean;
   showHowTo: boolean;
@@ -58,6 +59,7 @@ interface GameStore {
 
   setSelectedLayer: (l: LayerId | null) => void;
   setInspect: (id: string | null) => void;
+  closeInspect: () => void;
   toggleGlossary: (v?: boolean) => void;
   toggleLeaderboard: (v?: boolean) => void;
   toggleHowTo: (v?: boolean) => void;
@@ -86,6 +88,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   selectedLayer: null,
   inspectPlayerId: null,
+  inspectOpen: false,
   showGlossary: false,
   showLeaderboard: false,
   showHowTo: false,
@@ -93,7 +96,8 @@ export const useGame = create<GameStore>((set, get) => ({
   llmBannerDismissed: false,
 
   setSelectedLayer: (l) => set({ selectedLayer: l }),
-  setInspect: (id) => set({ inspectPlayerId: id }),
+  setInspect: (id) => set({ inspectPlayerId: id, inspectOpen: id != null }),
+  closeInspect: () => set({ inspectOpen: false }),
   toggleGlossary: (v) => set((s) => ({ showGlossary: v ?? !s.showGlossary })),
   toggleLeaderboard: (v) => set((s) => ({ showLeaderboard: v ?? !s.showLeaderboard })),
   toggleHowTo: (v) => set((s) => ({ showHowTo: v ?? !s.showHowTo })),

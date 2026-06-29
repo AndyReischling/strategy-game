@@ -1,9 +1,15 @@
 import type { LayerOption, Region, WorldEvent, OptionTag } from "../data/types";
 
+export type BadgeTone = "good" | "bad" | "info";
+export interface PriceBadge {
+  text: string;
+  tone: BadgeTone; // good = cheaper/helpful, bad = pricier/frozen/riskier, info = neutral
+}
+
 export interface PriceInfo {
   base: number;
   cost: number; // effective cost for this region this round
-  badges: string[]; // UI notes: discounts, surcharges
+  badges: PriceBadge[]; // UI notes: discounts, surcharges
   frozen: boolean; // unavailable this round (event froze the precondition)
   doubledSanction: boolean;
   unreliable: boolean; // cable-cut / gray-market: may not deliver
@@ -31,26 +37,26 @@ export function priceFor(
   event?: WorldEvent,
 ): PriceInfo {
   let cost = option.baseCost;
-  const badges: string[] = [];
+  const badges: PriceBadge[] = [];
   let frozen = false;
   let doubledSanction = false;
   let unreliable = option.exposure === "gray-market";
 
-  // 1) Region powers
+  // 1) Region powers — your home-turf advantages, generally favorable
   for (const rule of region.priceRules) {
     if (!ruleApplies(option, rule.appliesTo)) continue;
     if (rule.setCost !== undefined) {
+      badges.push({ text: rule.note, tone: rule.setCost < cost ? "good" : "info" });
       cost = rule.setCost;
-      badges.push(rule.note);
       continue;
     }
     if (rule.pctOff) {
       cost = cost * (1 - rule.pctOff);
-      badges.push(rule.note);
+      badges.push({ text: rule.note, tone: "good" });
     }
     if (rule.flatOff) {
       cost = cost - rule.flatOff;
-      badges.push(rule.note);
+      badges.push({ text: rule.note, tone: "good" });
     }
   }
 
@@ -67,31 +73,31 @@ export function priceFor(
         case "surcharge-tag":
           if (matched && !regionExempt && !tagExempt) {
             cost += eff.amount ?? 0;
-            badges.push(`${event.name} +$${eff.amount}B`);
+            badges.push({ text: `${event.name} +$${eff.amount}B`, tone: "bad" });
           }
           break;
         case "discount-tag":
           if (matched && !regionExempt) {
             cost -= eff.amount ?? 0;
-            badges.push(`${event.name} −$${eff.amount}B`);
+            badges.push({ text: `${event.name} −$${eff.amount}B`, tone: "good" });
           }
           break;
         case "freeze-precondition":
           if (eff.preconditions?.includes(option.requires)) {
             frozen = true;
-            badges.push(`${event.name}: frozen without a deal`);
+            badges.push({ text: `${event.name}: frozen without a deal`, tone: "bad" });
           }
           break;
         case "double-sanction":
           if (matched && option.sanctionRisk) {
             doubledSanction = true;
-            badges.push(`${event.name}: double sanction risk`);
+            badges.push({ text: `${event.name}: double sanction risk`, tone: "bad" });
           }
           break;
         case "unreliable-rented":
           if (matched) {
             unreliable = true;
-            badges.push(`${event.name}: may not deliver`);
+            badges.push({ text: `${event.name}: may not deliver`, tone: "bad" });
           }
           break;
         default:

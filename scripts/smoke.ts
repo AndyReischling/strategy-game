@@ -69,29 +69,18 @@ async function main() {
     ["hosting", "h-foreign-cloud"],
   ];
 
-  // play 5 rounds — one build per round
+  // play 5 rounds — each round opens directly on the single action phase, so
+  // every player takes ONE action (build), then the host ends the round with a
+  // single advancePhase that resolves the off-switch + scoring + next round.
   for (let r = 1; r <= 5; r++) {
-    a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // -> world-event
-    await sleep(60);
-    a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // -> build
-    await sleep(60);
-
     const [aLayer, aOpt] = aBuilds[r - 1];
     a.send({ t: "action", code: CODE, action: { type: "setPick", playerId: pa, layer: aLayer, optionId: aOpt } as never });
     const [bLayer, bOpt] = bBuilds[r - 1];
     b.send({ t: "action", code: CODE, action: { type: "setPick", playerId: pb, layer: bLayer, optionId: bOpt } as never });
-    await sleep(60);
+    await sleep(80);
 
-    a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // -> trade
-    await sleep(40);
-    // one action per round is spent on the build, so no deal here
-
-    a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // -> off-switch
-    await sleep(40);
-    a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // -> score
-    await sleep(40);
-    a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // -> next round / final
-    await sleep(60);
+    a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // ends round: off-switch + score + next round/final
+    await sleep(80);
   }
 
   await sleep(200);

@@ -44,7 +44,11 @@ export const GLOSSARY: GlossaryEntry[] = [
   { id: "eurohpc", term: "EuroHPC", group: "Real-world names", plain: "Europe's shared public supercomputers.", why: "Cheap, sovereign compute — just limited in size." },
 
   // Game terms
-  { id: "adoption", term: "Adoption", group: "Game terms", plain: "How many people actually use your AI.", why: "The main thing you're scored on — usage beats raw smarts here." },
+  { id: "adoption", term: "Adoption", group: "Game terms", plain: "How many people actually use your AI. Each option adds (or subtracts) this many adoption points.", why: "The main thing you're scored on — usage beats raw smarts here." },
+  { id: "sovereignty", term: "Sovereignty", group: "Game terms", plain: "How independent and un-switch-off-able your stack is. Each option adds (or subtracts) this many sovereignty points — owned, home-built pieces raise it; rented foreign ones don't.", why: "The other half of your score, and what keeps you standing when the off-switch hits." },
+  { id: "price-shift", term: "Price change", group: "Game terms", plain: "A discount or surcharge on this option this round. Green = cheaper (your region's strength or a helpful event); orange = pricier, frozen, or riskier because of the world event.", why: "Prices move every round — time your big buys for when they're cheap and not frozen." },
+  { id: "recurring-cost", term: "Per-round cost", group: "Game terms", plain: "A fee you pay again every round for as long as you keep this — you're renting it, not owning it outright.", why: "Cheap to start, but it drains your budget over time and can be cut off." },
+  { id: "list-price", term: "List vs. now price", group: "Game terms", plain: "The struck-through number is the normal price; the bold number is what it actually costs you this round after region and event changes.", why: "The gap is the discount or surcharge in action — buy when 'now' is below list." },
   { id: "coherence", term: "Coherence", group: "Game terms", plain: "Whether your five choices fit together sensibly.", why: "A matched set scores a bonus; a clashing one is penalized." },
   { id: "standing-deal", term: "Standing deal", group: "Game terms", plain: "A trade that repeats automatically every round.", why: "Worth more, but can break under pressure and hurt both sides." },
   { id: "sanction-risk", term: "Sanction risk", group: "Game terms", plain: "The chance a choice gets you politically punished — cut off from chips, deals, or markets.", why: "Cheap options like Chinese chips carry it; it spikes during certain events." },
@@ -53,6 +57,12 @@ export const GLOSSARY: GlossaryEntry[] = [
   { id: "hallucinate", term: "Hallucinate", group: "Game terms", plain: "When an AI confidently states something false.", why: "A model built on too little compute is more likely to, and it can cost you users' trust." },
   { id: "aligned-jurisdiction", term: "Aligned jurisdiction", group: "Game terms", plain: "A country the US deems trustworthy enough for full AI access.", why: "The in-world rule that sorts who gets chips and models — and who gets the slow lane." },
   { id: "standing-investment", term: "Standing investment", group: "Game terms", plain: "When one player funds another in exchange for a cut of their final score.", why: "How money-rich, build-poor players (like the Gulf fund) win — by backing others." },
+
+  // Deal types
+  { id: "deal-swap", term: "Swap", group: "Making deals", plain: "A straight cash exchange — you pay them or they pay you, nothing else changes hands.", why: "The simplest deal: settle a favor, split a cost, or just move money where it's needed." },
+  { id: "deal-asset", term: "Asset deal", group: "Making deals", plain: "Hand over a specific thing you hold — a license, chip allocation, channel, or financing.", why: "The fastest way to fill someone's exact gap; sell it outright or lease it (below)." },
+  { id: "deal-access", term: "Access deal", group: "Making deals", plain: "Grant another player an unlock their stack is missing — like cluster compute or a market channel — without giving up the asset itself.", why: "Lets you rent out what you've built so a partner can advance, while you keep owning it." },
+  { id: "lease", term: "Lease", group: "Making deals", plain: "Rent the asset out instead of selling it: they get to use it, you keep ownership, and it recurs every round.", why: "Steady income and you never lose the asset — but a lease can be cut off, unlike an outright sale." },
 ];
 
 export const GLOSSARY_BY_ID: Record<string, GlossaryEntry> = Object.fromEntries(

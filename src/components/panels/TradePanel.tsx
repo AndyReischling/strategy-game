@@ -14,6 +14,22 @@ const ASSET_LABEL: Record<string, string> = {
   "swf-financing": "SWF financing", "industrial-demand": "Industrial demand",
 };
 
+// Inputs are denominated in billions of USD. Format with thousands separators
+// and parse anything the user types (commas, "$", "b") back to a plain number.
+const fmtB = (n: number): string => (n > 0 ? n.toLocaleString("en-US") : "");
+const parseB = (s: string): number => {
+  const n = Number(s.replace(/[^0-9.]/g, ""));
+  return isNaN(n) ? 0 : n;
+};
+const inWords = (billions: number): string => {
+  if (billions <= 0) return "$0";
+  if (billions >= 1000) {
+    const t = Math.round((billions / 1000) * 10) / 10;
+    return `$${t.toLocaleString("en-US")} trillion`;
+  }
+  return `$${billions.toLocaleString("en-US")} billion`;
+};
+
 const PRECOND_LABEL: Partial<Record<Precondition, string>> = {
   "deal-compute": "Cluster access (compute)",
   "supply-allocation": "Chip supply allocation",
@@ -114,26 +130,43 @@ export function TradePanel() {
                 <button key={k} className={`kind-tab ${kind === k ? "on" : ""}`} onClick={() => setKind(k)}>{k}</button>
               ))}
             </div>
+            <p className="tiny muted kind-legend">
+              <Term id="deal-swap">Swap</Term> cash · <Term id="deal-asset">Asset</Term> hand over a holding · <Term id="deal-access">Access</Term> grant an unlock · <Term id="standing-deal">Standing</Term> auto-repeats
+            </p>
 
             <div className="row gap-2">
-              <label className="field grow"><span>You pay $B</span><input type="number" min={0} value={iPay} onChange={(e) => setIPay(Math.max(0, +e.target.value))} /></label>
-              <label className="field grow"><span>They pay $B</span><input type="number" min={0} value={theyPay} onChange={(e) => setTheyPay(Math.max(0, +e.target.value))} /></label>
+              <label className="field grow"><span>You pay</span>
+                <div className="money-input">
+                  <span className="money-pre">$</span>
+                  <input type="text" inputMode="numeric" placeholder="0" value={fmtB(iPay)} onChange={(e) => setIPay(Math.max(0, parseB(e.target.value)))} />
+                  <span className="money-suf">billion</span>
+                </div>
+                {iPay > 0 && <span className="tiny muted money-readout">{inWords(iPay)}</span>}
+              </label>
+              <label className="field grow"><span>They pay</span>
+                <div className="money-input">
+                  <span className="money-pre">$</span>
+                  <input type="text" inputMode="numeric" placeholder="0" value={fmtB(theyPay)} onChange={(e) => setTheyPay(Math.max(0, parseB(e.target.value)))} />
+                  <span className="money-suf">billion</span>
+                </div>
+                {theyPay > 0 && <span className="tiny muted money-readout">{inWords(theyPay)}</span>}
+              </label>
             </div>
 
             {kind === "asset" && (
               <div className="row gap-2 wrap">
-                <label className="field grow"><span>Asset</span>
+                <label className="field grow"><span><Term id="deal-asset">Asset</Term></span>
                   <select value={assetId} onChange={(e) => setAssetId(e.target.value as AssetId)}>
                     <option value="">— choose —</option>
                     {tradableAssets.map((a) => <option key={a} value={a}>{ASSET_LABEL[a]} {myAssets.includes(a) ? "(yours)" : "(theirs)"}</option>)}
                   </select>
                 </label>
-                <label className="check"><input type="checkbox" checked={lease} onChange={(e) => setLease(e.target.checked)} /> Lease (recurring)</label>
+                <label className="check"><input type="checkbox" checked={lease} onChange={(e) => setLease(e.target.checked)} /> <Term id="lease">Lease</Term> (recurring)</label>
               </div>
             )}
 
             {kind === "access" && (
-              <label className="field"><span>Unlock you grant them</span>
+              <label className="field"><span><Term id="deal-access">Unlock</Term> you grant them</span>
                 <select value={precond} onChange={(e) => setPrecond(e.target.value as Precondition)}>
                   {Object.entries(PRECOND_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
@@ -141,7 +174,7 @@ export function TradePanel() {
             )}
 
             {(standing || kind === "standing") && (
-              <label className="field"><span>Backer's cut of their score % (standing investment)</span>
+              <label className="field"><span>Backer's cut of their score % (<Term id="standing-investment">standing investment</Term>)</span>
                 <input type="number" min={0} max={50} value={investorCut} onChange={(e) => setInvestorCut(Math.max(0, Math.min(50, +e.target.value)))} />
               </label>
             )}
@@ -162,8 +195,15 @@ export function TradePanel() {
             <h3 className="tiny upper"><Bank size={14} /> Raise capital — pitch a VC</h3>
             <p className="tiny muted">Two sentences on why to fund your stack. {llmEnabled() ? "A real VC reads your pitch — a sharp one can win funding even for a middling stack." : "The VC backs a coherent, defensible plan — and turns down a weak or over-exposed one."} <b className="warn-text">A pitch is your whole turn: get declined and you've burned the round.</b></p>
             <textarea className="pitch-box" rows={3} maxLength={240} value={pitch} onChange={(e) => setPitch(e.target.value)} placeholder="In two sentences: what are you building, and why is it the one to back?" />
+            {me.actionThisRound ? (
+              <p className="tiny warn-text" style={{ margin: "0 0 0.4rem" }}>
+                You've already used your one action this round ({me.actionThisRound === "build" ? "built a layer" : me.actionThisRound === "deal" ? "proposed a deal" : me.pitch && !me.pitch.funded ? "VC pitch declined" : "raised capital"}). Pitching opens again next round — advance the table from the left rail.
+              </p>
+            ) : pitch.trim().length < 12 ? (
+              <p className="tiny muted" style={{ margin: "0 0 0.4rem" }}>Write at least a sentence ({pitch.trim().length}/12 characters) to pitch.</p>
+            ) : null}
             <button className="btn btn-go" style={{ width: "100%" }} disabled={!!me.actionThisRound || pitch.trim().length < 12 || pitching} onClick={onPitch}>
-              {pitching ? "The VC is pondering…" : "Pitch to the VC →"}
+              {pitching ? "The VC is pondering…" : me.actionThisRound ? "Action already used this round" : "Pitch to the VC →"}
             </button>
             {pitching && (
               <div className="vc-pondering">

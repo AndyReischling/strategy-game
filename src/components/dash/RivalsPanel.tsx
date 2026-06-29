@@ -12,6 +12,7 @@ export function RivalsPanel() {
 
   const players = [...table.players.filter((p) => p.ready)].sort((a, b) => b.score.final - a.score.final);
   const activeDeals = table.deals.filter((d) => d.active && !d.broken);
+  const actionPhase = table.phase === "build" || table.phase === "trade";
 
   return (
     <div className="rivals">
@@ -33,6 +34,11 @@ export function RivalsPanel() {
                 {region?.flag} {p.name} {isMe && <span className="you-badge">you</span>}
                 <span className="tiny muted rival-region"> · {region?.name}</span>
               </span>
+              {actionPhase && (
+                <span className={`turn-badge ${p.actionThisRound ? "moved" : "towait"}`}>
+                  {p.actionThisRound ? "moved" : "to move"}
+                </span>
+              )}
               <span className="rival-score tnum display">{p.score.final}</span>
             </div>
             <StackColumn player={p} compact />

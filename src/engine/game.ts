@@ -9,7 +9,6 @@ import type {
   OffSwitchPlayerResult,
 } from "../data/types";
 import type { GameAction } from "./actions";
-import { PHASE_ORDER } from "./actions";
 import { CONFIG, SEAT_COLORS } from "../data/config";
 import { REGIONS, REGION_BY_ID } from "../data/regions";
 import { OPTION_BY_ID } from "../data/layers";
@@ -270,6 +269,7 @@ function botBuild(table: TableState, bot: Player) {
 
 // ─── Off-switch roll ─────────────────────────────────────────────────────────
 function rollOffSwitch(table: TableState) {
+  table.brokenDeals = undefined;
   const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
   const rng = mulberry32(table.seed ^ hashStringToSeed(`r${table.round}-os`));
   const twice = event?.effects.some((e) => e.kind === "offswitch-twice") ?? false;
@@ -338,7 +338,7 @@ function rollOffSwitch(table: TableState) {
     pushLog(table, "offswitch", `Off-switch die rolled ${rolls.join(" & ")} — the lever didn't fall.`);
   }
 
-  table.lastRoll = { rolls, triggered, outcomeId, results };
+  table.lastRoll = { round: table.round, rolls, triggered, outcomeId, results };
 }
 
 // ─── Score tick ──────────────────────────────────────────────────────────────
@@ -375,8 +375,6 @@ function enterPhase(table: TableState, phase: TableState["phase"]) {
       // fresh single action for everyone this round
       for (const p of table.players) { p.movedLayer = null; p.actionThisRound = null; }
       recomputeUnlocks(table);
-      table.lastRoll = undefined;
-      table.brokenDeals = undefined;
       const ev = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
       pushLog(table, "round", `Round ${table.round} opens.`);
       if (ev) pushLog(table, "event", `${ev.name} — ${ev.effectText}`);
@@ -489,6 +487,7 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       table.eventDeck = drawEventDeck(table.eventSeed ?? table.seed, CONFIG.totalRounds);
       table.round = 1;
       enterPhase(table, "market-open");
+      enterPhase(table, "build"); // single action phase — build/deal/pitch all happen here
       break;
     }
     case "setPick": {
@@ -649,29 +648,30 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       break;
     }
     case "advancePhase": {
+      // One host click ends the round: lock everyone's stack, resolve the
+      // off-switch + scoring, then open the next round (or finish the game).
+      // The off-switch dice and the new world event surface as overlays in the
+      // UI — there are no manual phase steps anymore.
       if (table.phase === "lobby" || table.phase === "final") break;
-      // lock built layers at the end of the build phase
-      if (table.phase === "build") {
-        for (const p of table.players) {
-          for (const layer of Object.keys(p.picks) as LayerId[]) {
-            if (!p.lockedLayers.includes(layer)) p.lockedLayers.push(layer);
-          }
+
+      // lock built layers at the end of the round
+      for (const p of table.players) {
+        for (const layer of Object.keys(p.picks) as LayerId[]) {
+          if (!p.lockedLayers.includes(layer)) p.lockedLayers.push(layer);
         }
       }
-      if (table.phase === "score") {
-        if (table.round < CONFIG.totalRounds) {
-          // deactivate one-off (non-standing) deals before the next round
-          for (const d of table.deals) if (!d.standing && !d.terms.lease) d.active = false;
-          table.round += 1;
-          enterPhase(table, "market-open");
-        } else {
-          table.phase = "final";
-        }
-        break;
-      }
-      const idx = PHASE_ORDER.indexOf(table.phase as (typeof PHASE_ORDER)[number]);
-      if (idx >= 0 && idx < PHASE_ORDER.length - 1) {
-        enterPhase(table, PHASE_ORDER[idx + 1]);
+
+      enterPhase(table, "off-switch"); // rolls the dice → table.lastRoll (revealed in UI)
+      scoreTick(table); // running scores update (and write to the leaderboard)
+
+      if (table.round < CONFIG.totalRounds) {
+        // deactivate one-off (non-standing) deals before the next round
+        for (const d of table.deals) if (!d.standing && !d.terms.lease) d.active = false;
+        table.round += 1;
+        enterPhase(table, "market-open"); // draws the next event, resets actions
+        enterPhase(table, "build"); // back to the single action phase
+      } else {
+        table.phase = "final";
       }
       break;
     }
@@ -682,6 +682,10 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       break;
     }
   }
+
+  // keep running scores live so the round panel + leaderboard always reflect
+  // the current board (scoreTick is idempotent: it recomputes from scratch).
+  if (table.phase !== "lobby" && table.phase !== "final") scoreTick(table);
 
   table.updatedAt = Date.now();
   return { error };

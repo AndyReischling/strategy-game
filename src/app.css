@@ -11,6 +11,13 @@ input, select, textarea {
 }
 textarea { resize: vertical; line-height: 1.35; }
 input[type="number"] { font-family: var(--font-mono); }
+.money-input { display: flex; align-items: stretch; border: var(--outline) solid var(--ink); border-radius: var(--radius); background: var(--cream); overflow: hidden; }
+.money-input input { border: 0; border-radius: 0; flex: 1; min-width: 0; font-family: var(--font-mono); text-align: right; padding: 0.5rem 0.4rem; }
+.money-input input:focus { outline: none; }
+.money-input .money-pre, .money-input .money-suf { display: flex; align-items: center; padding: 0 0.5rem; font-weight: 800; font-size: 0.85rem; background: var(--ink); color: var(--cream); white-space: nowrap; }
+.money-input .money-pre { font-family: var(--font-mono); }
+.money-input:focus-within { box-shadow: 0 0 0 3px var(--blue); }
+.money-readout { margin-top: 0.25rem; font-weight: 700; }
 .check { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; margin-top: 0.5rem; cursor: pointer; }
 .check input { width: auto; }
 .warn-text { color: var(--orange); font-weight: 700; }
@@ -151,6 +158,11 @@ input[type="number"] { font-family: var(--font-mono); }
 .opt-meta { margin-bottom: 0.3rem; }
 .opt-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .badge { background: var(--ink); color: var(--cream); border-radius: 3px; padding: 0.05rem 0.35rem; font-family: var(--font-mono); font-size: 0.66rem; }
+.badge.badge-good { background: var(--green); }
+.badge.badge-bad { background: var(--orange); }
+.badge.badge-info { background: var(--ink); }
+.badge .term, .oc-price .term { border-bottom: none; cursor: help; }
+.oc-price .term { display: inline-flex; align-items: baseline; gap: 0.3rem; }
 .opt-need { margin-top: 0.2rem; }
 .opt-buy { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; min-width: 92px; }
 .opt-price { display: flex; flex-direction: column; align-items: flex-end; line-height: 1; }
@@ -207,7 +219,8 @@ input[type="number"] { font-family: var(--font-mono); }
 .llm-banner svg { flex: none; }
 .llm-banner code { background: rgba(0,0,0,0.28); padding: 0 0.3rem; border-radius: 3px; font-family: var(--font-mono); }
 .llm-banner .grow { flex: 1; }
-.kind-tabs { display: flex; gap: 0.3rem; margin: 0.5rem 0; }
+.kind-tabs { display: flex; gap: 0.3rem; margin: 0.5rem 0 0.35rem; }
+.kind-legend { margin: 0 0 0.5rem; line-height: 1.5; }
 .kind-tab { flex: 1; text-transform: capitalize; border: 2px solid var(--ink); border-radius: var(--radius); padding: 0.35rem; background: var(--cream); font-weight: 700; font-size: 0.82rem; }
 .kind-tab.on { background: var(--blue); color: var(--cream); }
 .deals-list { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -237,6 +250,26 @@ input[type="number"] { font-family: var(--font-mono); }
 .hit-list { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.6rem; }
 .hit-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.3rem 0.5rem; border: 2px solid var(--ink); border-radius: var(--radius); background: var(--cream); }
 .hit-row.hit { background: #f6dccf; }
+
+/* ── Inspect a rival's stack ───────────────────────────── */
+.inspect-overlay { z-index: 65; pointer-events: auto; }
+.inspect-card { pointer-events: auto; position: relative; width: min(440px, 100%); max-height: 88vh; overflow-y: auto; padding: 1.2rem; --spot: var(--blue); }
+.insp-head { display: flex; align-items: center; gap: 0.5rem; padding-right: 2rem; }
+.insp-name { font-size: 1.5rem; line-height: 1.1; }
+.insp-score { text-align: right; display: flex; flex-direction: column; }
+.insp-score .display { font-size: 1.8rem; line-height: 1; }
+.insp-stats { display: flex; flex-wrap: wrap; gap: 0.7rem; margin: 0.6rem 0; }
+.insp-stack { list-style: none; margin: 0.3rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.insp-row { display: flex; align-items: center; gap: 0.55rem; border: 2px solid var(--ink); border-radius: var(--radius); padding: 0.45rem 0.55rem; background: var(--cream); box-shadow: var(--shadow-soft); }
+.insp-row.empty { opacity: 0.7; border-style: dashed; box-shadow: none; }
+.insp-row.exposed { box-shadow: inset 0 0 0 3px var(--orange); }
+.insp-ico { flex: none; }
+.insp-body { display: flex; flex-direction: column; gap: 0.1rem; flex: 1; min-width: 0; }
+.insp-layer { opacity: 0.7; }
+.insp-opt { font-weight: 800; font-size: 0.95rem; }
+.insp-meta { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin-top: 0.15rem; }
+.insp-check { flex: none; color: var(--green); }
+.insp-deals { margin-top: 0.7rem; }
 
 /* ── Drawers (glossary + leaderboard) ───────────────────── */
 .drawer-backdrop { position: absolute; inset: 0; z-index: 60; background: rgba(26,26,24,0.4); display: flex; justify-content: flex-end; animation: fade 0.2s; }
@@ -293,6 +326,10 @@ input[type="number"] { font-family: var(--font-mono); }
 .phase-rail { background: var(--cream); border: var(--outline) solid var(--ink); border-radius: var(--radius); box-shadow: var(--shadow-stamp); padding: 0.7rem; }
 .pr-round { display: flex; align-items: baseline; gap: 0.5rem; }
 .pr-round-n { font-size: 2rem; }
+.pr-score { margin-top: 0.6rem; padding: 0.5rem 0.6rem; border: 2px solid var(--ink); border-radius: var(--radius); background: var(--blue); color: var(--cream); display: flex; flex-direction: column; gap: 0.1rem; }
+.pr-score .pr-score-n { font-size: 1.9rem; line-height: 1; }
+.pr-score-parts { display: flex; gap: 0.7rem; margin-top: 0.2rem; opacity: 0.95; }
+.pr-score-parts span { display: inline-flex; align-items: center; gap: 0.2rem; font-weight: 700; }
 .pr-steps { list-style: none; margin: 0.6rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.15rem; }
 .pr-step { display: flex; align-items: center; gap: 0.5rem; padding: 0.28rem 0.4rem; border-radius: var(--radius); border: 2px solid transparent; font-weight: 700; font-size: 0.85rem; }
 .pr-step .pr-bullet { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border: 2px solid var(--ink); border-radius: 999px; background: var(--cream); flex: none; }
@@ -301,8 +338,19 @@ input[type="number"] { font-family: var(--font-mono); }
 .pr-step.now { background: var(--yellow); border-color: var(--ink); box-shadow: var(--shadow-soft); }
 .pr-step.now .pr-bullet { background: var(--ink); color: var(--yellow); }
 .pr-step.next { opacity: 0.8; }
+.pr-steps-head { margin: 0.5rem 0 0.1rem; letter-spacing: 0.04em; }
+.pr-now-tag { margin-left: auto; background: var(--ink); color: var(--cream); border-radius: 999px; padding: 0 0.4rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; }
 .pr-hint { line-height: 1.35; margin: 0.4rem 0 0.7rem; opacity: 0.85; }
+.pr-advance-cap { display: block; text-align: center; margin-bottom: 0.3rem; letter-spacing: 0.04em; }
+.pr-turns { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; border: 2px solid var(--ink); border-radius: var(--radius); padding: 0.3rem 0.5rem; margin-bottom: 0.6rem; text-align: center; }
+.pr-turns.waiting { background: var(--yellow); }
+.pr-turns.done { background: var(--green); color: var(--cream); }
 .pr-advance .btn { width: 100%; }
+.pr-waiting { display: block; text-align: center; margin-top: 0.35rem; }
+
+.turn-badge { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; border: 2px solid var(--ink); border-radius: 999px; padding: 0 0.35rem; flex: none; }
+.turn-badge.moved { background: var(--green); color: var(--cream); }
+.turn-badge.towait { background: var(--yellow); color: var(--ink); }
 
 /* Event log */
 .event-log { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--cream); border: var(--outline) solid var(--ink); border-radius: var(--radius); box-shadow: var(--shadow-stamp); padding: 0.7rem; overflow: hidden; }
@@ -331,6 +379,7 @@ input[type="number"] { font-family: var(--font-mono); }
 /* Builder: stack + chooser */
 .builder { display: grid; grid-template-columns: 268px 1fr; gap: 1rem; align-items: start; }
 .bs-title { margin: 0.9rem 0 0.4rem; }
+.bs-hint { line-height: 1.4; margin: 0 0 0.6rem; }
 
 /* Region barometer (strengths/weaknesses) */
 .barometer { border: var(--outline) solid var(--ink); border-radius: var(--radius); background: var(--cream); box-shadow: var(--shadow-soft); padding: 0.6rem 0.7rem; }
@@ -394,6 +443,9 @@ button.stack-block { cursor: pointer; }
 .oc-explainer { margin: 0.15rem 0; font-size: 0.86rem; }
 .oc-catch { opacity: 0.85; }
 .oc-meta { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.2rem 0; align-items: center; }
+.oc-meta > .term { border-bottom: none; display: inline-flex; vertical-align: middle; }
+.meter, .chip-tag { cursor: help; }
+.meter-label { font-weight: 700; text-transform: lowercase; }
 .meter { display: inline-flex; align-items: center; gap: 0.2rem; border: 2px solid var(--ink); border-radius: 999px; padding: 0.02rem 0.4rem; font-size: 0.72rem; }
 .meter.adopt { background: var(--yellow); }
 .meter.sov { background: var(--green); color: var(--cream); }
@@ -425,8 +477,8 @@ button.stack-block { cursor: pointer; }
 /* ═══════════ HOW TO PLAY (intro / tutorial) ═══════════ */
 .landing-help { position: absolute; top: 1rem; right: 1rem; z-index: 5; }
 .howto-backdrop { position: fixed; inset: 0; z-index: 200; background: rgba(26,26,24,0.55); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 1rem; animation: fade 0.2s; }
-.howto { position: relative; width: min(620px, 100%); max-height: 90vh; overflow-y: auto; padding: 1.4rem 1.5rem; --spot: var(--yellow); }
-.howto-x { position: absolute; top: 0.7rem; right: 0.7rem; }
+.howto { position: relative; display: flex; flex-direction: column; width: min(620px, 100%); max-height: 90vh; overflow-y: auto; padding: 1.4rem 1.5rem; --spot: var(--yellow); }
+.howto-x { position: sticky; top: 0; align-self: flex-end; z-index: 10001; margin-bottom: -2rem; background: var(--cream); }
 .howto-kicker { letter-spacing: 0.12em; opacity: 0.6; }
 .howto-title { font-size: clamp(2rem, 6vw, 2.8rem); margin: 0.3rem 0 0.8rem; }
 .howto-lead { font-size: 1rem; line-height: 1.5; font-weight: 500; margin: 0.5rem 0; }

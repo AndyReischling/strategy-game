@@ -12,6 +12,7 @@ import { TradePanel } from "../components/panels/TradePanel";
 import { ScorePanel } from "../components/panels/ScorePanel";
 import { EventCard } from "../components/panels/EventCard";
 import { OffSwitchOverlay } from "../components/panels/OffSwitchOverlay";
+import { InspectOverlay } from "../components/panels/InspectOverlay";
 import { LeaderboardPanel } from "../components/panels/LeaderboardPanel";
 import { FinalScreen } from "./FinalScreen";
 import { credits } from "../components/util";
@@ -31,15 +32,17 @@ export function GameScreen() {
   const leave = useGame((s) => s.leave);
   const [tab, setTab] = useState<Tab>("build");
   const [layer, setLayer] = useState<LayerId>("chips");
+  // reveals are sequenced per client: the off-switch dice first, then the new
+  // round's world event. We track which round's reveal each client has seen.
+  const [seenRollRound, setSeenRollRound] = useState(0);
+  const [seenEventRound, setSeenEventRound] = useState(0);
 
   const me = table.players.find((p) => p.id === playerId);
 
-  // jump to the trade tab when the table enters the trade phase
+  // start each round on the Build tab; players can switch to Deals/Score freely
   useEffect(() => {
-    if (table.phase === "trade") setTab("trade");
-    if (table.phase === "build" || table.phase === "market-open") setTab("build");
-    if (table.phase === "score") setTab("score");
-  }, [table.phase]);
+    setTab("build");
+  }, [table.round]);
 
   // Host generates real-world-grounded event flavor once per game (Claude).
   const flavorGen = useRef(false);
@@ -61,6 +64,10 @@ export function GameScreen() {
   if (table.phase === "final") return <FinalScreen />;
 
   const activeDeals = table.deals.filter((d) => d.active && !d.broken).length;
+  // off-switch dice from the round that just ended, not yet acknowledged here
+  const pendingRoll = !!table.lastRoll && table.lastRoll.round > seenRollRound;
+  // this round's world event, shown after any pending off-switch reveal
+  const pendingEvent = !pendingRoll && !!table.eventId && seenEventRound < table.round;
 
   return (
     <div className="dash">
@@ -104,6 +111,7 @@ export function GameScreen() {
                   <div className="builder-stack">
                     <RegionBarometer regionId={me.regionId} />
                     <div className="bs-title tiny upper muted">Your stack</div>
+                    <p className="bs-hint tiny muted">Tap any layer to work on it. The five layers can be built in <b>any order</b>, across rounds — start with Hosting and finish with Chips if you like. You build one layer per round.</p>
                     <StackColumn player={me} interactive selectedLayer={layer} onSelect={setLayer} />
                   </div>
                   <div className="builder-choose">
@@ -124,8 +132,9 @@ export function GameScreen() {
         </aside>
       </div>
 
-      {table.phase === "world-event" && <EventCard />}
-      {table.phase === "off-switch" && <OffSwitchOverlay />}
+      {pendingRoll && <OffSwitchOverlay onClose={() => setSeenRollRound(table.lastRoll!.round)} />}
+      {pendingEvent && <EventCard onClose={() => setSeenEventRound(table.round)} />}
+      <InspectOverlay />
       {showLeaderboard && <LeaderboardPanel />}
     </div>
   );
