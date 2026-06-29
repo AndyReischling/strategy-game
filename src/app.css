@@ -519,11 +519,12 @@ button.stack-block { cursor: pointer; }
 .hs-body { display: flex; flex-direction: column; }
 .hs-head { font-family: var(--font-display); text-transform: uppercase; font-size: 1.05rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 .hs-analogy { color: var(--orange); }
-.hs-weight { display: inline-flex; gap: 2px; margin-left: auto; }
+.hs-weight { display: inline-flex; align-items: center; gap: 2px; margin-left: 0.45rem; vertical-align: middle; white-space: nowrap; }
+.hs-impact-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.55; margin-right: 0.15rem; font-weight: 700; }
 .hw-pip { width: 0.5rem; height: 0.5rem; border-radius: 999px; border: 2px solid var(--ink); background: var(--cream); }
 .hw-pip.on { background: var(--yellow); }
 .hs-line { line-height: 1.3; opacity: 0.85; }
-.hs-role { color: #1c6e3e; font-weight: 700; margin-top: 0.1rem; }
+.hs-role { color: #1c6e3e; font-weight: 700; margin-top: 0.1rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0.1rem; }
 .howto-allfive { margin-top: 0.7rem; line-height: 1.4; border-top: 2px dotted var(--ink); padding-top: 0.6rem; }
 
 .howto-win { list-style: none; margin: 0.6rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }

@@ -72,7 +72,7 @@ export function HowToPlay() {
           <div className="howto-page">
             <div className="howto-kicker mono upper tiny">How to play · 2 of {pages}</div>
             <h2 className="howto-title">Build your AI in five steps</h2>
-            <p className="howto-lead">Like building a sandwich, bottom to top — pick one option at each step. You don't have to finish all five in one round; build up over the game. The bars show how much each step <b>drives your score</b>.</p>
+            <p className="howto-lead">Like building a sandwich, bottom to top — pick one option at each step. You don't have to finish all five in one round; build up over the game. The <b>impact</b> dots on each row show how much that step <b>drives your score</b>.</p>
             <ul className="howto-steps">
               {STEPS.map((s, i) => (
                 <li key={s.name} className="howto-step">
@@ -81,12 +81,15 @@ export function HowToPlay() {
                   <span className="hs-body">
                     <span className="hs-head">
                       <Term id={s.term}>{s.name}</Term> <span className="hs-analogy">— {s.analogy}</span>
-                      <span className="hs-weight" title={`Importance: ${s.importance} of 3`} aria-label={`Importance ${s.importance} of 3`}>
+                    </span>
+                    <span className="hs-line tiny">{s.line}</span>
+                    <span className="hs-role tiny">
+                      ▸ {s.role}
+                      <span className="hs-weight" title={`Score impact: ${s.importance} of 3`} aria-label={`Score impact ${s.importance} of 3`}>
+                        <span className="hs-impact-label">impact</span>
                         {Array.from({ length: 3 }).map((_, k) => <span key={k} className={`hw-pip ${k < s.importance ? "on" : ""}`} />)}
                       </span>
                     </span>
-                    <span className="hs-line tiny">{s.line}</span>
-                    <span className="hs-role tiny">▸ {s.role}</span>
                   </span>
                 </li>
               ))}
