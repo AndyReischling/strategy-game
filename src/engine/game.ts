@@ -130,7 +130,7 @@ export function evaluatePitch(player: Player): { funded: boolean; amount: number
   if (floor) return { funded: false, amount: 0, reason: floor };
 
   if (player.regionId === "gulf-swf")
-    return { funded: true, amount: 6, reason: "Sovereign-wealth backing — the capital is already yours to direct." };
+    return { funded: true, amount: 30, reason: "Sovereign-wealth backing — the capital is already yours to direct." };
 
   const picks = pickedFor(player);
   const sov = computeSovereignty(picks);
@@ -139,7 +139,7 @@ export function evaluatePitch(player: Player): { funded: boolean; amount: number
   if (sov.fraction <= -0.2) return { funded: false, amount: 0, reason: "Too exposed — they fear an off-switch wipes their investment overnight." };
   if (coh < 1.0) return { funded: false, amount: 0, reason: "Your picks don't hang together. Investors want a coherent plan, not a grab-bag." };
 
-  const amount = sov.fraction >= 0.4 ? 6 : 4;
+  const amount = sov.fraction >= 0.4 ? 25 : 15;
   return { funded: true, amount, reason: "A coherent, defensible plan — the term sheet is yours." };
 }
 
@@ -423,7 +423,7 @@ function setPick(table: TableState, player: Player, layer: LayerId, optionId: st
   const refund = player.paid[layer] ?? 0;
   const penalty = player.lockedLayers.includes(layer) ? CONFIG.switchingCostPenalty : 0;
   const available = player.credits + refund;
-  if (available < price.cost + penalty) return "Not enough Credits.";
+  if (available < price.cost + penalty) return "Not enough capital.";
 
   player.credits = available - price.cost - penalty;
   player.picks[layer] = optionId;
@@ -536,7 +536,7 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       if (verdict.funded) {
         p.credits += verdict.amount;
         p.raisesUsed += 1;
-        pushLog(table, "deal", `${p.name} raised §${verdict.amount} from a VC.`);
+        pushLog(table, "deal", `${p.name} raised $${verdict.amount}B from a VC.`);
       } else {
         pushLog(table, "deal", `${p.name} pitched a VC — declined. Turn burned.`);
       }
@@ -560,14 +560,14 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       let amount = Math.round(action.amount);
       let reason = action.reason?.trim() || (funded ? "Funded." : "Declined.");
       if (floor) { funded = false; amount = 0; reason = floor; } // hard floors override the model
-      amount = funded ? Math.max(3, Math.min(8, amount)) : 0; // clamp into the legal band
+      amount = funded ? Math.max(10, Math.min(40, amount)) : 0; // clamp into the legal band ($B)
 
       p.pitch = { text: pitch, funded, amount, reason, round: table.round };
       p.actionThisRound = "capital";
       if (funded) {
         p.credits += amount;
         p.raisesUsed += 1;
-        pushLog(table, "deal", `${p.name} raised §${amount} from a VC.`);
+        pushLog(table, "deal", `${p.name} raised $${amount}B from a VC.`);
       } else {
         pushLog(table, "deal", `${p.name} pitched a VC — declined. Turn burned.`);
       }

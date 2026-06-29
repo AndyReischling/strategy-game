@@ -67,13 +67,13 @@ export function priceFor(
         case "surcharge-tag":
           if (matched && !regionExempt && !tagExempt) {
             cost += eff.amount ?? 0;
-            badges.push(`${event.name} +§${eff.amount}`);
+            badges.push(`${event.name} +$${eff.amount}B`);
           }
           break;
         case "discount-tag":
           if (matched && !regionExempt) {
             cost -= eff.amount ?? 0;
-            badges.push(`${event.name} −§${eff.amount}`);
+            badges.push(`${event.name} −$${eff.amount}B`);
           }
           break;
         case "freeze-precondition":

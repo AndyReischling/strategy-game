@@ -76,7 +76,7 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
               <div className="oc-top">
                 <span className="oc-name">{opt.name}</span>
                 <span className="oc-price tnum">
-                  {price.cost !== opt.baseCost && <span className="base-strike">§{opt.baseCost}</span>}
+                  {price.cost !== opt.baseCost && <span className="base-strike">{credits(opt.baseCost)}</span>}
                   <span className="now">{credits(price.cost)}</span>
                 </span>
               </div>
@@ -89,7 +89,7 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
                 <Meter value={opt.sovereignty} kind="sov" />
                 {opt.exposure !== "none" && <span className="chip-tag warn"><Warning size={12} /> <Term id="exposure">exposed</Term></span>}
                 {opt.sanctionRisk && <span className="chip-tag warn"><Prohibit size={12} /> <Term id="sanction-risk">sanction</Term></span>}
-                {opt.recurring ? <span className="chip-tag"><ArrowsClockwise size={12} /> §{opt.recurring}/rd</span> : null}
+                {opt.recurring ? <span className="chip-tag"><ArrowsClockwise size={12} /> {credits(opt.recurring)}/rd</span> : null}
                 {opt.terms?.slice(0, 1).map((t) => <span key={t} className="chip-tag"><Term id={t} /></span>)}
               </div>
 

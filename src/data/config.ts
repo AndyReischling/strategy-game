@@ -2,12 +2,15 @@
 // GLOBAL TUNABLES (§4, §6, §7). One place to balance the whole game.
 // ─────────────────────────────────────────────────────────────────────────
 
+// All currency is in BILLIONS OF US DOLLARS. Internally a value of 100 = $100B;
+// the UI renders it as "$100B". Costs are tuned to feel like the real capital /
+// infrastructure bills (frontier training runs, mega-clusters, chip allocations).
 export const CONFIG = {
-  startingBudget: 20, // §20 Credits, equal for everyone (§4)
-  perRoundStipend: 0, // optional small income; default off (§4)
+  startingBudget: 100, // $100B, equal for everyone
+  perRoundStipend: 0, // optional small income; default off
   totalRounds: 5,
   maxPlayersPerTable: 6,
-  switchingCostPenalty: 1, // changing a locked pick costs this (§6 step 3)
+  switchingCostPenalty: 3, // changing a locked pick costs $3B
 
   // Off-switch die (§6 step 5)
   offSwitch: {
@@ -35,7 +38,7 @@ export const CONFIG = {
     assetPoints: 2,
     standingMultiplier: 1.6, // standing deals worth more
     gapFillBonus: 2, // a deal that fills a real gap
-    breakPenalty: 3, // both sides lose this if a standing deal breaks
+    breakPenalty: 5, // $B both sides lose if a standing deal breaks
   },
 };
 

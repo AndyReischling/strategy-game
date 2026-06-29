@@ -16,6 +16,9 @@ export const colorClass = (c: SpotColor) => `c-${c}`;
 export const onColor = (c: SpotColor): string =>
   c === "yellow" ? "#1a1a18" : "#ede8dc";
 
+// Currency is billions of USD: a value of 100 renders as "$100B".
 export function credits(n: number): string {
-  return `§${Math.round(n * 10) / 10}`;
+  const v = Math.round(n * 10) / 10;
+  if (v === 0) return "$0";
+  return `$${v}B`;
 }

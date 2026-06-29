@@ -14,7 +14,7 @@ export const REGIONS: Region[] = [
       "State-bank backing (Bpifrance) — one standing loan without a partner",
     ],
     assets: [
-      { id: "mistral-license", name: "Mistral", blurb: "National-champion model + sovereign cloud. License it to others for Credits.", tradeable: true },
+      { id: "mistral-license", name: "Mistral", blurb: "National-champion model + sovereign cloud. License it to others for capital.", tradeable: true },
     ],
     weakness: "Thin deep-talent pool — frontier pre-training is expensive.",
     signatureMove: "Full-stack sovereign play: cheap clean compute + own model + own hosting.",
@@ -93,7 +93,7 @@ export const REGIONS: Region[] = [
     signatureMove: "Green-compute landlord: host everyone's clusters cheaply and clean; bankroll partners for a share.",
     hook: "Nscale's Narvik campus (30,000+ GPUs, renewable-powered); Nordic sovereign wealth; the cooling advantage.",
     shortOn: "Talent",
-    creditBonus: 3,
+    creditBonus: 15,
     services: ["Lease renewable data-center sites", "Standing investment for a cut of a partner's score"],
     priceRules: [
       { appliesTo: { tags: ["renewable"] }, pctOff: 0.4, note: "Renewable grid −40%" },
@@ -132,7 +132,7 @@ export const REGIONS: Region[] = [
     strengths: { chips: -1, compute: -1, talent: 1, weights: 0, market: 3, capital: 2 },
     powers: [
       "Huge enterprise/industrial market — premium enterprise distribution channel (big Adoption)",
-      "Strong Credits position",
+      "Strong capital position",
     ],
     assets: [
       { id: "industrial-demand", name: "Industrial demand", blurb: "Airbus/BMW/SAP-style accounts — grant to a partner so their model reaches German industry.", tradeable: true },
@@ -142,7 +142,7 @@ export const REGIONS: Region[] = [
     signatureMove: "Demand kingmaker: you own the customers everyone wants. Auction your channel.",
     hook: "Mistral's Airbus/BMW/SAP roster; Germany as Europe's industrial buyer; Nvidia's German industrial-AI cloud.",
     shortOn: "Power, chips",
-    creditBonus: 2,
+    creditBonus: 10,
     services: ["Grant the enterprise channel (unlocks L5 enterprise)", "Auction industrial demand"],
     priceRules: [
       { appliesTo: { optionIds: ["h-enterprise"] }, setCost: 0, note: "Owns the enterprise channel" },
@@ -156,7 +156,7 @@ export const REGIONS: Region[] = [
     anchor: { x: 45.5, y: 28 },
     strengths: { chips: 0, compute: 1, talent: 1, weights: 0, market: 1, capital: 3 },
     powers: [
-      "Deep capital markets (City of London) — raise one extra mid-game Credit injection",
+      "Deep capital markets (City of London) — raise one extra mid-game capital injection",
       "Strong research base — small discount on model-building",
     ],
     assets: [
@@ -191,7 +191,7 @@ export const REGIONS: Region[] = [
     signatureMove: "Venture financier: spread money across the most promising stacks, collect a share of the winner.",
     hook: "Gulf SWFs (MGX/Mubadala-style) as anchor investors in global AI compute; money seeking sovereign-AI returns.",
     shortOn: "Talent, power — builds nothing alone",
-    creditBonus: 14,
+    creditBonus: 80,
     services: ["Standing investment for a cut of a partner's score", "Single-handedly fund a coalition cluster"],
     priceRules: [],
   },

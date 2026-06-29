@@ -97,7 +97,7 @@ export function TradePanel() {
 
   return (
     <div className="stage-panel trade-view" aria-label="Deals">
-      <p className="tiny muted" style={{ marginTop: 0 }}>Bilateral trades. Both sides confirm; the app moves Credits, assets & unlocks. <Term id="standing-deal">Standing deals</Term> auto-repeat — and can break under pressure.</p>
+      <p className="tiny muted" style={{ marginTop: 0 }}>Bilateral trades. Both sides confirm; the app moves capital, assets & unlocks. <Term id="standing-deal">Standing deals</Term> auto-repeat — and can break under pressure.</p>
 
       <div className="trade-grid">
         <div className="trade-left">
@@ -116,8 +116,8 @@ export function TradePanel() {
             </div>
 
             <div className="row gap-2">
-              <label className="field grow"><span>You pay §</span><input type="number" min={0} value={iPay} onChange={(e) => setIPay(Math.max(0, +e.target.value))} /></label>
-              <label className="field grow"><span>They pay §</span><input type="number" min={0} value={theyPay} onChange={(e) => setTheyPay(Math.max(0, +e.target.value))} /></label>
+              <label className="field grow"><span>You pay $B</span><input type="number" min={0} value={iPay} onChange={(e) => setIPay(Math.max(0, +e.target.value))} /></label>
+              <label className="field grow"><span>They pay $B</span><input type="number" min={0} value={theyPay} onChange={(e) => setTheyPay(Math.max(0, +e.target.value))} /></label>
             </div>
 
             {kind === "asset" && (
