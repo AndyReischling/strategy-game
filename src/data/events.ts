@@ -6,7 +6,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-nvidia-toll",
     name: "Nvidia Toll Booth",
     flavor: "Every road to the frontier runs through one company's gate — and the toll just went up.",
-    effectText: "All Nvidia-based options cost +$3B. The ASML token holder profits as the gatekeeper.",
+    effectText: "Anything built on Nvidia chips costs $3B more this round. Whoever holds the ASML token cashes in as the gatekeeper.",
     effects: [
       { kind: "surcharge-tag", tags: ["nvidia"], amount: 3 },
     ],
@@ -16,7 +16,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-cost-gap",
     name: "The Cost Gap Bites",
     flavor: "A datacenter on European soil still costs a third more than the same racks in Texas. The bill came due.",
-    effectText: "All build-your-own compute options cost +$3B. Renting suddenly looks tempting — the trap.",
+    effectText: "Building your own data centers costs $3B more this round. Renting looks cheaper now — that's the trap.",
     effects: [
       { kind: "surcharge-tag", tags: ["domestic-build"], amount: 3 },
     ],
@@ -25,7 +25,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-energy-crunch",
     name: "Energy Crunch",
     flavor: "The grid groaned. Ministers chose between cooling the server halls and heating the houses.",
-    effectText: "Non-renewable compute builds cost +$5B. Nordics and renewable power are immune; France's nuclear grid takes only +$3B.",
+    effectText: "Power-hungry data centers cost $5B more to build this round. Renewable-powered ones (and the Nordics) pay nothing extra; France's nuclear grid pays only $3B more.",
     effects: [
       { kind: "surcharge-tag", tags: ["nuclear"], amount: 3, exemptRegionIds: ["france"] },
       { kind: "surcharge-tag", tags: ["domestic-build"], amount: 5, exemptTags: ["renewable"], exemptRegionIds: ["nordics"] },
@@ -36,7 +36,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-open-breakthrough",
     name: "Open-Weight Breakthrough",
     flavor: "Someone posted the weights at midnight. By morning, a thousand labs had a head start they hadn't paid for.",
-    effectText: "Fine-tune & continued pre-training cost −$3B. A good round to own, not rent.",
+    effectText: "Improving a free, open AI (fine-tuning or extra training) costs $3B less this round. A great round to own your model instead of renting one.",
     effects: [
       { kind: "discount-tag", tags: ["finetune", "continued"], amount: 3 },
     ],
@@ -46,7 +46,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-export-controls",
     name: "Export Controls Tighten",
     flavor: "A new clause, three pages deep: aligned jurisdictions only. The rest get a slower lane — or none.",
-    effectText: "Chinese-chip options carry double sanction risk. Direct Nvidia is frozen without a supply deal or ASML.",
+    effectText: "Chinese chips are twice as likely to get you sanctioned this round. And you can't buy Nvidia chips directly unless you have a chip-supply deal or the ASML token.",
     effects: [
       { kind: "double-sanction", tags: ["chinese"] },
       { kind: "freeze-precondition", preconditions: ["supply-allocation"] },
@@ -57,7 +57,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-capital-flight",
     name: "Capital Flight",
     flavor: "The founders packed for California again. The term sheets followed them out the door.",
-    effectText: "Rented / foreign options cost −$3B now — but each one adds +1 exposure to this round's off-switch die.",
+    effectText: "Renting or using foreign tech costs $3B less this round — but each rented or foreign piece makes you easier to switch off when the dice roll.",
     effects: [
       { kind: "discount-tag", tags: ["rented", "foreign"], amount: 3 },
       { kind: "exposure-bonus", tags: ["rented", "foreign"], amount: 1 },
@@ -68,7 +68,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-talent-war",
     name: "Talent War",
     flavor: "Three of the lab's best got an email from Menlo Park. Two are already gone.",
-    effectText: "All model-building costs +$3B — except Canada and India.",
+    effectText: "Building any AI model costs $3B more this round — except in Canada and India.",
     effects: [
       { kind: "surcharge-tag", tags: ["model-build"], amount: 3, exemptRegionIds: ["canada", "india"] },
     ],
@@ -77,7 +77,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-swf-floods",
     name: "Sovereign Wealth Floods In",
     flavor: "A Gulf fund wired more than the entire national research budget, and asked for very little in writing.",
-    effectText: "Take +$30B this round if you accept a standing investment (the backer gets 15% of your final score).",
+    effectText: "Accept a backer this round and get $30B now — in exchange, they take 15% of your final score.",
     effects: [
       { kind: "swf-stipend", amount: 30 },
     ],
@@ -87,7 +87,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-cable-cut",
     name: "A Cable Is Cut",
     flavor: "Somewhere under the Baltic, a fiber line went dark. No one claimed it. Everyone understood it.",
-    effectText: "Foreign cloud & rented options are unreliable: roll for each — on 1–2 it doesn't deliver.",
+    effectText: "Anything you rent or run on a foreign cloud might fail this round: each one rolls a die, and on a 1 or 2 it doesn't deliver.",
     effects: [
       { kind: "unreliable-rented", tags: ["foreign", "rented"] },
     ],
@@ -96,7 +96,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-summit",
     name: "The Coalition Holds a Summit",
     flavor: "For one afternoon, the speeches stopped and the spreadsheets came out. Real terms, real signatures.",
-    effectText: "Every deal grants +1 bonus Deal-score; shared-cluster / coalition-weights cost −$5B.",
+    effectText: "Every active deal is worth 1 extra point this round, and team-built compute or shared model weights cost $5B less.",
     effects: [
       { kind: "deal-bonus", amount: 1 },
       { kind: "discount-tag", tags: [], optionIds: ["co-coalition", "w-coalition"], amount: 5 },
@@ -107,7 +107,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-hallucinate",
     name: "A Sovereign Model Hallucinates",
     flavor: "The ministry's own AI invented a trade embargo that wasn't real. The markets believed it for six hours.",
-    effectText: "A rushed / under-built model (from-scratch on small compute, or distilled) takes a −2 Adoption trust hit.",
+    effectText: "A rushed or under-powered model (built from scratch on too little compute, or cheaply copied) loses 2 adoption as users stop trusting it.",
     effects: [
       { kind: "trust-hit-rushed", amount: 2 },
     ],
@@ -117,7 +117,7 @@ export const WORLD_EVENTS: WorldEvent[] = [
     id: "ev-rehearsal",
     name: "The Off-Switch Rehearsal",
     flavor: "It wasn't the real thing. Just a 'maintenance window' that happened to last four hours and hit one continent.",
-    effectText: "The off-switch die rolls twice at the end of this round. Exposed stacks, brace.",
+    effectText: "The off-switch dice roll twice at the end of this round — double the chance your rented or foreign tech gets cut off.",
     effects: [
       { kind: "offswitch-twice" },
     ],
