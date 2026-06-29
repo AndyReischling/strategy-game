@@ -22,8 +22,32 @@ This runs **both** the client (Vite, `http://localhost:5173`) and the authoritat
 The dev server already binds to your LAN. On each phone visit `http://<your-computer-ip>:5173` (printed by Vite as the *Network* URL). The client auto-connects to the game server on the same hostname, port `8787`.
 
 ### Deploying for a 40+ person event
-- Build the client: `npm run build` → static files in `dist/` (host anywhere).
-- Run the server somewhere reachable: `npm run server` (set `PORT` as needed). Behind TLS, point the client at it with `VITE_WS_URL=wss://your-server` at build time.
+
+The server serves the built client **and** the WebSocket on one origin, so the
+simplest deploy is a **single service** — online multiplayer works with no extra
+config (the client connects right back to wherever it's served).
+
+**Option A — one service (recommended).** Build then run the server:
+
+```bash
+npm run build && npm run server   # serves the app + WS on $PORT (default 8787)
+```
+
+- **Render:** push to GitHub and create a Blueprint from the included `render.yaml`.
+- **Docker** (Fly.io / Railway / Cloud Run / a VPS): the included `Dockerfile` builds and runs everything. The platform's `PORT` is honored.
+- Pin a fixed world-event sequence with `EVENT_SEED=<number>`.
+
+**Option B — split (static client on Vercel + server elsewhere).** Deploy the
+client to Vercel (the included `vercel.json` sets the Vite build), deploy the
+server separately (Option A), and tell the client where the server is at build
+time:
+
+```bash
+VITE_WS_URL=wss://your-server.example.com   # set as a Vercel env var
+```
+
+> A plain static deploy with **no** reachable server still runs **Practice solo**
+> (the engine runs in-browser); only online multiplayer needs the server.
 
 ## Multiplayer architecture (§9 Path A)
 

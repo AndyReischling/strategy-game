@@ -2,10 +2,16 @@ import type { TableState, LeaderboardRow } from "../data/types";
 import type { GameAction } from "../engine/actions";
 
 export function wsUrl(): string {
+  // 1) Explicit override (split deploy: static client on Vercel + server elsewhere)
   const fromEnv = import.meta.env.VITE_WS_URL as string | undefined;
   if (fromEnv) return fromEnv;
+
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  return `${proto}://${location.hostname}:8787`;
+  // 2) Dev: Vite serves the client on :5173 while the server runs on :8787
+  if (location.port === "5173") return `${proto}://${location.hostname}:8787`;
+  // 3) Production single service: the server serves the client AND the WebSocket
+  //    on the same origin, so connect right back to it.
+  return `${proto}://${location.host}`;
 }
 
 type Handlers = {

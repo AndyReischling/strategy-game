@@ -1,4 +1,7 @@
 import { createServer } from "node:http";
+import { readFile, stat } from "node:fs/promises";
+import { join, normalize, extname, dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { WebSocketServer, WebSocket } from "ws";
 import type { TableState } from "../src/data/types";
 import type { GameAction } from "../src/engine/actions";
@@ -22,6 +25,53 @@ const EVENT_SEED = Number(process.env.EVENT_SEED ?? Math.floor(Math.random() * 0
 const tables = new Map<string, TableState>();
 const rooms = new Map<string, Set<WebSocket>>(); // code -> sockets
 const everyone = new Set<WebSocket>();
+
+// Serve the built client (dist/) from the same origin, so one deployment hosts
+// both the app and the WebSocket — no separate static host or VITE_WS_URL needed.
+const DIST = resolve(dirname(fileURLToPath(import.meta.url)), "..", "dist");
+const MIME: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".map": "application/json; charset=utf-8",
+  ".webmanifest": "application/manifest+json",
+};
+
+async function serveStatic(reqUrl: string, res: import("node:http").ServerResponse): Promise<boolean> {
+  let pathname = "/";
+  try {
+    pathname = decodeURIComponent(new URL(reqUrl, "http://x").pathname);
+  } catch {
+    pathname = "/";
+  }
+  const rel = normalize(pathname).replace(/^(\.\.[/\\])+/, "");
+  let filePath = join(DIST, rel === "/" ? "index.html" : rel);
+  if (!filePath.startsWith(DIST)) filePath = join(DIST, "index.html"); // no path traversal
+
+  try {
+    let s = await stat(filePath).catch(() => null);
+    if (!s || s.isDirectory()) {
+      // SPA fallback — any unknown route serves index.html
+      filePath = join(DIST, "index.html");
+      s = await stat(filePath).catch(() => null);
+      if (!s) return false; // dist not built (dev) → let caller handle
+    }
+    const body = await readFile(filePath);
+    res.writeHead(200, { "content-type": MIME[extname(filePath)] ?? "application/octet-stream" });
+    res.end(body);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 interface ClientMeta {
   code?: string;
@@ -72,8 +122,13 @@ const http = createServer((req, res) => {
     res.end(JSON.stringify({ ok: true, tables: tables.size }));
     return;
   }
-  res.writeHead(200, { "content-type": "text/plain" });
-  res.end("Sovereign Stack server is running.");
+  // Try to serve the built client; if dist isn't present (dev), say so.
+  serveStatic(req.url ?? "/", res).then((served) => {
+    if (!served) {
+      res.writeHead(200, { "content-type": "text/plain" });
+      res.end("Sovereign Stack server is running (no built client found — run `npm run build`).");
+    }
+  });
 });
 
 const wss = new WebSocketServer({ server: http });

@@ -1,0 +1,19 @@
+# One-service deploy (recommended): the Node server builds & serves the client
+# AND hosts the WebSocket on the same origin — online multiplayer works with
+# zero extra config. Render injects PORT (the server reads process.env.PORT).
+#
+# Deploy: push to GitHub, then New + → "Blueprint" in Render and pick this repo.
+services:
+  - type: web
+    name: sovereign-stack
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Optional: pin a specific world-event sequence for an event.
+      # - key: EVENT_SEED
+      #   value: "12345"
