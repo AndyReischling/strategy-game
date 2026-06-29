@@ -280,6 +280,8 @@ export interface Player {
   paid: Partial<Record<LayerId, number>>;
   /** layers locked at the end of a prior round — changing them costs a switching penalty */
   lockedLayers: LayerId[];
+  /** the single layer this player built/changed this round (one move per round); null = move unused */
+  movedLayer: LayerId | null;
   /** assets currently held (starts from region, changes via trades) */
   assets: AssetId[];
   /** preconditions unlocked via deals (recomputed each round from active deals) */

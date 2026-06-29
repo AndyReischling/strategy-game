@@ -32,6 +32,10 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
   const layerDef = LAYER_BY_ID[layer];
   const LIcon = LAYER_ICON[layer];
 
+  // one build/upgrade per round: if you've already acted on a different layer, this one is locked
+  const moveLocked = !!me.movedLayer && me.movedLayer !== layer;
+  const movedName = me.movedLayer ? LAYER_BY_ID[me.movedLayer].name : "";
+
   const buy = (opt: LayerOption) => dispatch({ type: "setPick", playerId, layer: opt.layer, optionId: opt.id });
 
   return (
@@ -43,6 +47,12 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
           <div className="tiny">{layerDef.question}</div>
         </div>
       </div>
+
+      {moveLocked && (
+        <div className="move-lock">
+          <b>That's your move this round — you built {movedName}.</b> Make deals on the <b>Deals</b> tab, then end the round to build another layer next turn.
+        </div>
+      )}
 
       <div className="opt-grid">
         {layerDef.options.map((opt) => {
@@ -84,10 +94,10 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
 
               <div className="oc-action">
                 {isPicked ? (
-                  <button className="btn btn-sm btn-danger" onClick={() => dispatch({ type: "clearPick", playerId, layer: opt.layer })}><X size={14} /> Remove</button>
+                  <button className="btn btn-sm btn-danger" disabled={moveLocked} onClick={() => dispatch({ type: "clearPick", playerId, layer: opt.layer })}><X size={14} /> Remove</button>
                 ) : (
-                  <button className="btn btn-sm btn-go" disabled={blocked || !affordable} onClick={() => buy(opt)}>
-                    {affordable ? (<><Check size={14} /> Build {net > 0 ? credits(net) : ""}</>) : "Can't afford"}
+                  <button className="btn btn-sm btn-go" disabled={blocked || !affordable || moveLocked} onClick={() => buy(opt)}>
+                    {moveLocked ? "Move used" : affordable ? (<><Check size={14} /> Build {net > 0 ? credits(net) : ""}</>) : "Can't afford"}
                   </button>
                 )}
               </div>

@@ -52,39 +52,34 @@ async function main() {
   await sleep(150);
   console.log(`✓ game started, phase=${a.table?.phase}, round=${a.table?.round}, event=${a.table?.eventId}`);
 
-  // play 5 rounds
+  // Amara builds a sovereign open stack — ONE layer per round (weights before its dependents)
+  const aBuilds: [string, string][] = [
+    ["weights", "w-mistral"],
+    ["compute", "co-nuclear"],
+    ["model", "m-finetune"],
+    ["chips", "c-sovereign-chips"],
+    ["hosting", "h-open-ecosystem"],
+  ];
+  // Bo (Gulf) rents everything closed/foreign — should get crushed by sovereignty + die
+  const bBuilds: [string, string][] = [
+    ["weights", "w-closed-partner"],
+    ["compute", "co-foreign-hyperscaler"],
+    ["model", "m-wrap-closed"],
+    ["chips", "c-chinese"],
+    ["hosting", "h-foreign-cloud"],
+  ];
+
+  // play 5 rounds — one build per round
   for (let r = 1; r <= 5; r++) {
-    // build phase: get to build
-    // market-open -> world-event -> build
     a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // -> world-event
     await sleep(60);
     a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // -> build
     await sleep(60);
 
-    // Amara builds a sovereign open stack
-    const aBuilds: [string, string][] = [
-      ["chips", "c-sovereign-chips"],
-      ["compute", "co-nuclear"],
-      ["weights", "w-mistral"],
-      ["model", "m-finetune"],
-      ["hosting", "h-open-ecosystem"],
-    ];
-    for (const [layer, optionId] of aBuilds) {
-      a.send({ t: "action", code: CODE, action: { type: "setPick", playerId: pa, layer, optionId } as never });
-      await sleep(15);
-    }
-    // Bo (Gulf) rents everything closed/foreign — should get crushed by sovereignty + die
-    const bBuilds: [string, string][] = [
-      ["chips", "c-chinese"],
-      ["compute", "co-foreign-hyperscaler"],
-      ["model", "m-wrap-closed"],
-      ["weights", "w-closed-partner"],
-      ["hosting", "h-foreign-cloud"],
-    ];
-    for (const [layer, optionId] of bBuilds) {
-      b.send({ t: "action", code: CODE, action: { type: "setPick", playerId: pb, layer, optionId } as never });
-      await sleep(15);
-    }
+    const [aLayer, aOpt] = aBuilds[r - 1];
+    a.send({ t: "action", code: CODE, action: { type: "setPick", playerId: pa, layer: aLayer, optionId: aOpt } as never });
+    const [bLayer, bOpt] = bBuilds[r - 1];
+    b.send({ t: "action", code: CODE, action: { type: "setPick", playerId: pb, layer: bLayer, optionId: bOpt } as never });
     await sleep(60);
 
     a.send({ t: "action", code: CODE, action: { type: "advancePhase", playerId: pa } }); // -> trade

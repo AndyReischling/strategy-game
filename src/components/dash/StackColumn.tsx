@@ -38,6 +38,7 @@ export function StackColumn({ player, interactive, selectedLayer, onSelect, comp
     );
   }
 
+  const moveUsed = interactive && !!player.movedLayer;
   return (
     <div className={`stack-col c-${player.color}`}>
       {TOP_DOWN.map((l) => {
@@ -46,22 +47,25 @@ export function StackColumn({ player, interactive, selectedLayer, onSelect, comp
         const Icon = LAYER_ICON[l.id];
         const isSel = selectedLayer === l.id;
         const isExp = exposed.has(l.id);
+        const isMove = interactive && player.movedLayer === l.id;
+        const lockedRound = moveUsed && player.movedLayer !== l.id; // can't act on this layer this round
         const Tag = interactive ? "button" : "div";
         return (
           <Tag
             key={l.id}
-            className={`stack-block ${opt ? "built" : "empty"} ${isSel ? "sel" : ""} ${isExp ? "exposed" : ""}`}
+            className={`stack-block ${opt ? "built" : "empty"} ${isSel ? "sel" : ""} ${isExp ? "exposed" : ""} ${lockedRound ? "locked-round" : ""}`}
             onClick={interactive ? () => onSelect?.(l.id) : undefined}
             {...(interactive ? { type: "button" as const } : {})}
           >
             <span className="sb-icon"><Icon size={20} /></span>
             <span className="sb-text">
               <span className="sb-layer tiny mono">{l.index} · {l.name}</span>
-              <span className="sb-opt">{opt ? opt.name : "Choose an option"}</span>
+              <span className="sb-opt">{opt ? opt.name : lockedRound ? "Next round" : "Choose an option"}</span>
             </span>
             <span className="sb-side">
+              {isMove && <span className="sb-move tiny">this turn</span>}
               {isExp && <Warning size={16} className="sb-warn" />}
-              {opt ? <Check size={16} className="sb-check" /> : interactive ? <CaretRight size={16} /> : null}
+              {opt ? <Check size={16} className="sb-check" /> : interactive && !lockedRound ? <CaretRight size={16} /> : null}
             </span>
           </Tag>
         );

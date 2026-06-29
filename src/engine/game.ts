@@ -88,6 +88,7 @@ export function newPlayer(id: string, name: string, isHuman: boolean): Player {
     picks: {},
     paid: {},
     lockedLayers: [],
+    movedLayer: null,
     assets: [],
     unlocks: [],
     fragility: [],
@@ -201,6 +202,7 @@ function botBuild(table: TableState, bot: Player) {
   const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
   const region = REGION_BY_ID[bot.regionId];
   if (!region) return;
+  if (bot.movedLayer) return; // bots also build just one layer per round
   for (const layer of Object.keys(BOT_PLAN) as LayerId[]) {
     if (bot.picks[layer]) continue;
     for (const optId of BOT_PLAN[layer]) {
@@ -214,7 +216,8 @@ function botBuild(table: TableState, bot: Player) {
         bot.credits -= price.cost;
         bot.picks[layer] = optId;
         bot.paid[layer] = price.cost;
-        break;
+        bot.movedLayer = layer;
+        return; // one build, then done for the round
       }
     }
   }
@@ -324,6 +327,8 @@ function enterPhase(table: TableState, phase: TableState["phase"]) {
       }
       table.eventId = table.eventDeck[(table.round - 1) % table.eventDeck.length];
       if (table.round > 1) applyRoundStart(table);
+      // fresh move for everyone this round (one build/upgrade per round)
+      for (const p of table.players) p.movedLayer = null;
       recomputeUnlocks(table);
       table.lastRoll = undefined;
       table.brokenDeals = undefined;
@@ -351,6 +356,11 @@ function enterPhase(table: TableState, phase: TableState["phase"]) {
 function setPick(table: TableState, player: Player, layer: LayerId, optionId: string): string | null {
   if (table.phase !== "build" && table.phase !== "trade" && table.phase !== "market-open")
     return "You can only build during the build & trade phases.";
+  // one build/upgrade per round — you act on a single layer each round
+  if (player.movedLayer && player.movedLayer !== layer) {
+    const moved = OPTION_BY_ID[player.picks[player.movedLayer] ?? ""]?.layer ?? player.movedLayer;
+    return `One build per round — you've already acted on ${moved} this round. Trade now, or build another layer next round.`;
+  }
   const option = OPTION_BY_ID[optionId];
   if (!option || option.layer !== layer) return "Unknown option.";
   const region = REGION_BY_ID[player.regionId];
@@ -371,6 +381,7 @@ function setPick(table: TableState, player: Player, layer: LayerId, optionId: st
   player.credits = available - price.cost - penalty;
   player.picks[layer] = optionId;
   player.paid[layer] = price.cost;
+  player.movedLayer = layer; // this round's move is spent on this layer
   return null;
 }
 
@@ -445,10 +456,17 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
     case "clearPick": {
       const p = findPlayer(table, action.playerId);
       if (!p) break;
+      if (p.movedLayer && p.movedLayer !== action.layer) {
+        error = "One build per round — you can only change the layer you acted on this round.";
+        break;
+      }
       const refund = p.paid[action.layer] ?? 0;
       p.credits += refund;
+      const wasThisRoundMove = p.movedLayer === action.layer;
       delete p.picks[action.layer];
       delete p.paid[action.layer];
+      // undoing this round's build frees the move again; clearing an older pick spends it
+      p.movedLayer = wasThisRoundMove ? null : action.layer;
       break;
     }
     case "raiseCapital": {
