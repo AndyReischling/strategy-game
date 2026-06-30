@@ -29,7 +29,7 @@ input[type="number"] { font-family: var(--font-mono); }
 .landing-grain { position: fixed; inset: 0; opacity: 0.08; pointer-events: none; --dot: 1.4px; }
 .landing-hero { text-align: center; color: var(--cream); max-width: 760px; margin-top: 2vh; }
 .hero-kicker { letter-spacing: 0.12em; opacity: 0.85; margin-bottom: 1rem; }
-.hero-title { font-size: clamp(3.4rem, 13vw, 8rem); color: var(--yellow); -webkit-text-stroke: 3px var(--ink); text-shadow: 6px 7px 0 var(--ink); letter-spacing: 0.01em; line-height: 1.32; }
+.hero-title { font-size: clamp(3.4rem, 13vw, 8rem); color: var(--yellow); -webkit-text-stroke: 3px var(--ink); text-shadow: 6px 7px 0 var(--ink); letter-spacing: 0.01em; line-height: 1.27; }
 .hero-sub { font-size: clamp(0.95rem, 2.4vw, 1.2rem); line-height: 1.45; margin-top: 1.4rem; font-weight: 600; }
 .hero-sub .term { color: var(--yellow); }
 .landing-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.4rem; width: min(820px, 100%); margin-top: 2.4rem; }
