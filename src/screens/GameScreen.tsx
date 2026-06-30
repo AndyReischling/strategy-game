@@ -3,6 +3,7 @@ import { useGame } from "../store/useGame";
 import { EVENT_BY_ID } from "../data/events";
 import { llmEnabled, generateEventFlavor, generateScenario, scenarioBoard } from "../net/llm";
 import { PhaseRail } from "../components/dash/PhaseRail";
+import { SituationExplainer } from "../components/dash/SituationExplainer";
 import { EventLog } from "../components/dash/EventLog";
 import { RivalsPanel } from "../components/dash/RivalsPanel";
 import { StackColumn } from "../components/dash/StackColumn";
@@ -114,6 +115,7 @@ export function GameScreen() {
       <div className="dash-body">
         <aside className="rail rail-left">
           <PhaseRail />
+          <SituationExplainer />
           <EventLog />
         </aside>
 

@@ -490,6 +490,15 @@ button.stack-block { cursor: pointer; }
 .oc-fix-text { line-height: 1.35; }
 .oc-fix-btn { align-self: flex-start; }
 .oc-fix.oc-cofund { border-color: var(--violet); }
+.situation { padding: 0; overflow: hidden; }
+.situation > summary { cursor: pointer; list-style: none; padding: 0.55rem 0.7rem; font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
+.situation > summary::-webkit-details-marker { display: none; }
+.situation .se-caret { margin-left: auto; transition: transform 0.15s; }
+.situation[open] .se-caret { transform: rotate(90deg); }
+.situation[open] > summary { border-bottom: 2px dotted var(--ink); }
+.situation-body { padding: 0.6rem 0.7rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.situation-body .se-line { margin: 0; font-size: 0.82rem; line-height: 1.4; }
+
 .chooser-hint { display: flex; align-items: flex-start; gap: 0.45rem; margin: 0.2rem 0 0.6rem; padding: 0.5rem 0.6rem; border: 2px dashed var(--ink); border-radius: var(--radius); background: #fbf1d8; font-size: 0.84rem; line-height: 1.35; }
 .chooser-hint svg { flex: none; margin-top: 0.1rem; color: var(--orange); }
 .oc-action { margin-top: 0.4rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
