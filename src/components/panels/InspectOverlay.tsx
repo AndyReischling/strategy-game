@@ -7,9 +7,10 @@ import { RegionBarometer } from "../dash/RegionBarometer";
 import { Term } from "../Term";
 import { credits } from "../util";
 import {
-  LAYER_ICON, TrendUp, ShieldCheck, Warning, Prohibit,
+  LAYER_ICON, Warning, Prohibit,
   Coins, Handshake, Check, X,
 } from "../icons";
+import { StrengthMeter } from "../dash/StrengthMeter";
 
 // stack order, base → top (chips … hosting)
 const STACK = [...LAYERS];
@@ -79,8 +80,8 @@ export function InspectOverlay() {
                       <span key={opt.id} className="insp-opt-line">
                         <span className="insp-opt">{opt.name}{(p.qty[l.id]?.[opt.id] ?? 1) > 1 ? ` ×${p.qty[l.id]![opt.id]}` : ""}</span>
                         <span className="insp-meta">
-                          <span className="meter adopt"><TrendUp size={12} /> <b>{opt.adoption > 0 ? `+${opt.adoption}` : opt.adoption}</b></span>
-                          <span className={`meter sov ${opt.sovereignty < 0 ? "neg" : ""}`}><ShieldCheck size={12} /> <b>{opt.sovereignty > 0 ? `+${opt.sovereignty}` : opt.sovereignty}</b></span>
+                          <StrengthMeter value={opt.adoption} kind="adopt" withTerm={false} />
+                          <StrengthMeter value={opt.sovereignty} kind="sov" withTerm={false} />
                           {opt.exposure !== "none" && <span className="chip-tag warn"><Warning size={11} /> exposed</span>}
                           {opt.sanctionRisk && <span className="chip-tag warn"><Prohibit size={11} /> sanction</span>}
                         </span>

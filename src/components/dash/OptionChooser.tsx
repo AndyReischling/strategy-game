@@ -8,7 +8,8 @@ import { canBuild, playerCanGrant } from "../../engine/preconditions";
 import { Term } from "../Term";
 import { GLOSSARY_BY_ID } from "../../data/glossary";
 import { credits } from "../util";
-import { LAYER_ICON, Warning, Prohibit, ArrowsClockwise, TrendUp, ShieldCheck, Check, X, ArrowRight } from "../icons";
+import { LAYER_ICON, Warning, Prohibit, ArrowsClockwise, Check, X, ArrowRight } from "../icons";
+import { StrengthMeter } from "./StrengthMeter";
 import type { LayerId, LayerOption, StrengthDim } from "../../data/types";
 
 // Which barometer strength each layer leans on, and what to do if you're short.
@@ -22,27 +23,6 @@ const SHORT_HINT: Record<LayerId, string> = {
   weights: "You're short here — pick an open base you own and keep (below), or have a partner grant you one.",
   hosting: "You're short on market reach — deal for a market channel (Germany / India) to get your AI in front of users.",
 };
-
-// Choice cards show a qualitative strength (pips), not the exact number — you
-// weigh the trade-offs without min-maxing a visible score. Exact values still
-// appear at the end of the round (inspect / score panel).
-function Meter({ value, kind }: { value: number; kind: "adopt" | "sov" }) {
-  const neg = value < 0;
-  const Icon = kind === "adopt" ? TrendUp : ShieldCheck;
-  const label = kind === "adopt" ? "adoption" : "sovereignty";
-  // adoption spans ~0–6 (bucket by 2); sovereignty spans ~−2–3 (bucket by 1)
-  const level = value === 0 ? 0 : Math.min(3, Math.ceil(Math.abs(value) / (kind === "adopt" ? 2 : 1)));
-  const word = level === 0 ? "neutral" : level === 1 ? "low" : level === 2 ? "med" : "high";
-  return (
-    <Term id={kind === "adopt" ? "adoption" : "sovereignty"}>
-      <span className={`meter ${kind} ${neg ? "neg" : ""}`} aria-label={`${neg ? "negative " : ""}${label}: ${word}`}>
-        <Icon size={13} />
-        <span className="meter-pips">{[0, 1, 2].map((i) => <span key={i} className={`mp ${i < level ? "on" : ""}`} />)}</span>
-        <span className="meter-label">{neg ? `−${label}` : label}</span>
-      </span>
-    </Term>
-  );
-}
 
 export function OptionChooser({ layer }: { layer: LayerId }) {
   const table = useGame((s) => s.table)!;
@@ -119,8 +99,8 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
               <div className="oc-catch tiny"><b>Catch:</b> {opt.catch}</div>
 
               <div className="oc-meta">
-                <Meter value={opt.adoption} kind="adopt" />
-                <Meter value={opt.sovereignty} kind="sov" />
+                <StrengthMeter value={opt.adoption} kind="adopt" />
+                <StrengthMeter value={opt.sovereignty} kind="sov" />
                 {opt.exposure !== "none" && <Term id="exposure"><span className="chip-tag warn"><Warning size={12} /> exposed</span></Term>}
                 {opt.sanctionRisk && <Term id="sanction-risk"><span className="chip-tag warn"><Prohibit size={12} /> sanction</span></Term>}
                 {opt.recurring ? <Term id="recurring-cost"><span className="chip-tag"><ArrowsClockwise size={12} /> {credits(opt.recurring)}/rd</span></Term> : null}
