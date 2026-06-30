@@ -8,7 +8,7 @@ import { canBuild, playerCanGrant } from "../../engine/preconditions";
 import { Term } from "../Term";
 import { GLOSSARY_BY_ID } from "../../data/glossary";
 import { credits } from "../util";
-import { LAYER_ICON, Warning, Prohibit, ArrowsClockwise, Check, X, ArrowRight } from "../icons";
+import { LAYER_ICON, Warning, Prohibit, ArrowsClockwise, Check, ArrowRight } from "../icons";
 import { StrengthMeter } from "./StrengthMeter";
 import type { LayerId, LayerOption, StrengthDim } from "../../data/types";
 
@@ -79,7 +79,6 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
           const check = canBuild(me, opt);
           const owned = me.qty[opt.layer]?.[opt.id] ?? 0;
           const isPicked = owned > 0;
-          const undoable = me.movedOption === opt.id; // only this round's purchase can be undone
           const q = opt.countable ? Math.max(1, qtySel[opt.id] ?? 1) : 1;
           const buyCost = price.cost * q;
           const affordable = me.credits >= buyCost;
@@ -167,9 +166,7 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
 
               <div className="oc-action">
                 {owned > 0 && opt.countable && <span className="oc-owned tiny mono" title="Units built">×{owned}</span>}
-                {undoable ? (
-                  <button className="btn btn-sm btn-danger" onClick={() => dispatch({ type: "clearPick", playerId, layer: opt.layer, optionId: opt.id })}><X size={14} /> Undo</button>
-                ) : owned > 0 && !opt.countable ? (
+                {owned > 0 && !opt.countable ? (
                   <button className="btn btn-sm btn-ghost" disabled><Check size={14} /> Built</button>
                 ) : (
                   <>
