@@ -126,7 +126,10 @@ export const useGame = create<GameStore>((set, get) => ({
     const handlers = {
       onOpen: () => set({ connected: true, error: null }),
       onClose: () => set({ connected: false }),
-      onState: (table: TableState) => set({ table }),
+      // The host mutates its TableState in place, so clone before storing —
+      // otherwise the reference never changes and React/zustand skips the
+      // re-render (forcing a manual reload to see picks, ready count, phases).
+      onState: (table: TableState) => set({ table: structuredClone(table) }),
       onLeaderboard: (rows: LeaderboardRow[]) => set({ leaderboard: rows }),
       onError: (message: string) => get().setNotice(message),
       onJoined: (pid: string) => set({ playerId: pid, inspectPlayerId: pid, connected: true }),

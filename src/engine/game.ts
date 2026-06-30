@@ -163,13 +163,11 @@ function recomputeUnlocks(table: TableState) {
     for (const d of activeDeals(table)) {
       const gp = d.terms.grantsPrecondition;
       if (!gp) continue;
-      // Normal access grants land on the recipient.
-      if (d.toPlayerId === p.id) unlocks.add(gp);
-      // Co-funding is a mutual commitment: both partners count as committed,
-      // so the builder who proposes the deal is unlocked too.
-      if ((gp === "co-funder-1" || gp === "co-funders-2") && d.fromPlayerId === p.id) {
-        unlocks.add(gp);
-      }
+      // Both sides of an access/co-fund deal hold the unlock. The partner who
+      // grants it already had it; the player who set the deal up to clear their
+      // OWN blocked build needs it on their side too — otherwise they pay and
+      // stay locked.
+      if (d.toPlayerId === p.id || d.fromPlayerId === p.id) unlocks.add(gp);
     }
     p.unlocks = Array.from(unlocks);
   }
@@ -759,15 +757,17 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
     }
     case "cancelDeal": {
       const deal = table.deals.find((d) => d.id === action.dealId);
-      if (deal) {
-        // refund the proposer's action if they cancel a deal they proposed this round
-        const proposer = findPlayer(table, deal.fromPlayerId);
-        if (proposer && action.playerId === proposer.id && deal.roundCreated === table.round && proposer.actionThisRound === "deal") {
-          proposer.actionThisRound = null;
-        }
-        deal.active = false;
-        deal.broken = false;
+      if (!deal) break;
+      // Agreed deals are binding: you can only withdraw a proposal that hasn't
+      // been accepted yet (or one that's already broken/declined — a no-op).
+      if (deal.active) { error = "That deal is locked in — agreed deals can't be cancelled."; break; }
+      // refund the proposer's action if they withdraw a deal they proposed this round
+      const proposer = findPlayer(table, deal.fromPlayerId);
+      if (proposer && action.playerId === proposer.id && deal.roundCreated === table.round && proposer.actionThisRound === "deal") {
+        proposer.actionThisRound = null;
       }
+      deal.declined = true;
+      deal.active = false;
       recomputeUnlocks(table);
       break;
     }
@@ -800,8 +800,11 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       scoreTick(table); // running scores update (and write to the leaderboard)
 
       if (table.round < CONFIG.totalRounds) {
-        // deactivate one-off (non-standing) deals before the next round
-        for (const d of table.deals) if (!d.standing && !d.terms.lease) d.active = false;
+        // deactivate one-off (non-standing) deals before the next round, but
+        // keep access/unlock deals alive — the access they grant is ongoing, and
+        // proposing one costs your action, so you build with it the following round.
+        for (const d of table.deals)
+          if (!d.standing && !d.terms.lease && !d.terms.grantsPrecondition) d.active = false;
         table.round += 1;
         enterPhase(table, "market-open"); // draws the next event, resets actions
         enterPhase(table, "build"); // back to the single action phase

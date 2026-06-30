@@ -24,6 +24,15 @@ const inWords = (billions: number): string => {
   return `$${billions.toLocaleString("en-US")} billion`;
 };
 
+// Plain-language descriptions for each deal type, shown on the tabs themselves
+// so players don't have to decode the jargon from a legend.
+const KINDS: { id: DealKind; label: string; hint: string; term: string; desc: string }[] = [
+  { id: "swap", label: "Cash", hint: "pay or get paid", term: "deal-swap", desc: "A one-time cash payment between you and another player — no strings attached." },
+  { id: "asset", label: "Asset", hint: "hand over a holding", term: "deal-asset", desc: "Sell or lease a holding you own — like the ASML token, renewable sites, or a market channel." },
+  { id: "access", label: "Access", hint: "open a door", term: "deal-access", desc: "Grant a partner an unlock so they can build a layer they're currently blocked on." },
+  { id: "standing", label: "Standing", hint: "repeats each round", term: "standing-deal", desc: "An ongoing deal that auto-repeats every round until someone cancels it — or it breaks under pressure." },
+];
+
 export function TradePanel() {
   const table = useGame((s) => s.table)!;
   const playerId = useGame((s) => s.playerId);
@@ -134,13 +143,21 @@ export function TradePanel() {
               </select>
             </label>
             <div className="kind-tabs">
-              {(["swap", "asset", "access", "standing"] as DealKind[]).map((k) => (
-                <button key={k} className={`kind-tab ${kind === k ? "on" : ""}`} onClick={() => setKind(k)}>{k}</button>
+              {KINDS.map((k) => (
+                <button key={k.id} className={`kind-tab ${kind === k.id ? "on" : ""}`} onClick={() => setKind(k.id)}>
+                  <span className="kind-tab-label">{k.label}</span>
+                  <span className="kind-tab-hint">{k.hint}</span>
+                </button>
               ))}
             </div>
-            <p className="tiny muted kind-legend">
-              <Term id="deal-swap">Swap</Term> cash · <Term id="deal-asset">Asset</Term> hand over a holding · <Term id="deal-access">Access</Term> grant an unlock · <Term id="standing-deal">Standing</Term> auto-repeats
-            </p>
+            {(() => {
+              const active = KINDS.find((k) => k.id === kind)!;
+              return (
+                <p className="tiny muted kind-legend">
+                  <b><Term id={active.term}>{active.label}</Term> deal</b> — {active.desc}
+                </p>
+              );
+            })()}
 
             <div className="row gap-2">
               <label className="field grow"><span>You pay</span>
@@ -174,7 +191,7 @@ export function TradePanel() {
             )}
 
             {kind === "access" && (
-              <label className="field"><span><Term id="deal-access">Unlock</Term> you grant them</span>
+              <label className="field"><span><Term id="deal-access">Unlock</Term> this deal opens <span className="muted">(both of you can use it)</span></span>
                 <select value={precond} onChange={(e) => setPrecond(e.target.value as Precondition)}>
                   {Object.entries(PRECOND_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
@@ -253,29 +270,20 @@ export function TradePanel() {
 
             <h3 className="tiny upper">Active deals ({active.length})</h3>
             {active.length === 0 && <p className="tiny muted">No deals yet. Find what others need and fill a real gap — that scores most.</p>}
-            {alliances.map((al) => {
-              const mine = al.a === playerId || al.b === playerId;
-              return (
-                <div key={`al-${al.legs[0].id}`} className="deal-row card alliance">
-                  <div className="grow">
-                    <div className="deal-sum tiny"><Handshake size={13} /> Alliance · {playerLabel(al.a)} ↔ {playerLabel(al.b)}</div>
-                    {al.legs.map((l) => <div key={l.id} className="tiny muted">↻ {dealSummary(l)}</div>)}
-                  </div>
-                  {mine && (
-                    <button className="btn btn-sm btn-ghost" onClick={() => al.legs.forEach((l) => dispatch({ type: "cancelDeal", playerId, dealId: l.id }))}>dissolve</button>
-                  )}
+            {alliances.map((al) => (
+              <div key={`al-${al.legs[0].id}`} className="deal-row card alliance">
+                <div className="grow">
+                  <div className="deal-sum tiny"><Handshake size={13} /> Alliance · {playerLabel(al.a)} ↔ {playerLabel(al.b)}</div>
+                  {al.legs.map((l) => <div key={l.id} className="tiny muted">↻ {dealSummary(l)}</div>)}
                 </div>
-              );
-            })}
+              </div>
+            ))}
             {looseActive.map((d) => (
               <div key={d.id} className={`deal-row card ${d.standing ? "standing" : ""}`}>
                 <div className="grow">
                   <div className="deal-sum tiny">{dealSummary(d)}</div>
-                  <div className="tiny muted">{d.standing ? "↻ standing" : "one-off"}{d.terms.fillsGap ? " · fills a gap" : ""}</div>
+                  <div className="tiny muted">{d.standing ? "↻ standing · locked in" : "agreed · locked in"}{d.terms.fillsGap ? " · fills a gap" : ""}</div>
                 </div>
-                {(d.fromPlayerId === playerId || d.toPlayerId === playerId) && (
-                  <button className="btn btn-sm btn-ghost" onClick={() => dispatch({ type: "cancelDeal", playerId, dealId: d.id })}>cancel</button>
-                )}
               </div>
             ))}
           </section>
