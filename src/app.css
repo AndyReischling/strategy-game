@@ -504,6 +504,12 @@ button.stack-block { cursor: pointer; }
 .map-overlay-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.9rem; border-bottom: var(--outline) solid var(--ink); background: var(--cream-deep); }
 .map-overlay-board { position: relative; flex: 1; }
 
+/* ═══════════ Crash / error boundary ═══════════ */
+.crash-screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1.5rem; background: var(--cream); z-index: 9999; }
+.crash-card { max-width: 460px; width: 100%; padding: 1.4rem; display: flex; flex-direction: column; gap: 0.7rem; }
+.crash-card h2 { font-size: 1.8rem; }
+.crash-msg { background: var(--ink); color: var(--cream); border-radius: var(--radius); padding: 0.7rem 0.8rem; font-size: 0.8rem; line-height: 1.4; white-space: pre-wrap; word-break: break-word; overflow-x: auto; }
+
 /* ═══════════ HOW TO PLAY (intro / tutorial) ═══════════ */
 .landing-help { position: absolute; top: 1rem; right: 1rem; z-index: 5; }
 .howto-backdrop { position: fixed; inset: 0; z-index: 200; background: rgba(26,26,24,0.55); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 1rem; animation: fade 0.2s; }
