@@ -15,6 +15,7 @@ export type GameAction =
   | { type: "pitchVC"; playerId: string; pitch: string } // deterministic VC (no LLM / fallback)
   | { type: "resolvePitch"; playerId: string; pitch: string; funded: boolean; amount: number; reason: string } // LLM verdict + engine guardrails
   | { type: "setEventFlavor"; flavor: Record<string, { name: string; flavor: string; effectText: string }> }
+  | { type: "setGeneratedEvent"; round: number; event: { name: string; flavor: string; effectText: string; effects: unknown[] } }
   | {
       type: "proposeDeal";
       playerId: string; // proposer

@@ -1,7 +1,7 @@
 import { useGame } from "../../store/useGame";
 import { LAYER_BY_ID } from "../../data/layers";
 import { REGION_BY_ID } from "../../data/regions";
-import { EVENT_BY_ID } from "../../data/events";
+import { currentEvent } from "../../engine/game";
 import { priceFor } from "../../engine/pricing";
 import { canBuild, playerCanGrant } from "../../engine/preconditions";
 import { Term } from "../Term";
@@ -36,7 +36,7 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
   const others = table.players.filter((p) => p.ready && p.id !== me.id);
 
   const region = REGION_BY_ID[me.regionId];
-  const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
+  const event = currentEvent(table);
   const layerDef = LAYER_BY_ID[layer];
   const LIcon = LAYER_ICON[layer];
 

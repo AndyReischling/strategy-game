@@ -7,6 +7,9 @@ import type {
   ScoreBreakdown,
   SpotColor,
   OffSwitchPlayerResult,
+  WorldEvent,
+  EventEffect,
+  EventEffectKind,
 } from "../data/types";
 import type { GameAction } from "./actions";
 import { CONFIG, SEAT_COLORS } from "../data/config";
@@ -24,6 +27,56 @@ import { resolveOffSwitch } from "./offswitch";
 import { mulberry32, rollDie, hashStringToSeed } from "./rng";
 
 const BOT_NAMES = ["Atlas", "Borealis", "Cygnus", "Delta", "Echo", "Fjord"];
+
+/** The event in force this round: an LLM-generated one if present, else the static card. */
+export function currentEvent(table: TableState): WorldEvent | undefined {
+  return table.generatedEvents?.[table.round] ?? (table.eventId ? EVENT_BY_ID[table.eventId] : undefined);
+}
+
+// LLM-generated events are re-validated here so the model can shape the event
+// but never break balance: only known effect kinds, clamped amounts, ≤3 effects.
+const EVENT_KINDS: EventEffectKind[] = [
+  "surcharge-tag", "discount-tag", "freeze-precondition", "double-sanction",
+  "exposure-bonus", "deal-bonus", "offswitch-twice", "trust-hit-rushed",
+  "unreliable-rented", "swf-stipend",
+];
+const clampN = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+function sanitizeEffect(e: unknown): EventEffect | null {
+  if (!e || typeof e !== "object") return null;
+  const r = e as Record<string, unknown>;
+  const kind = r.kind as EventEffectKind;
+  if (!EVENT_KINDS.includes(kind)) return null;
+  const out: EventEffect = { kind };
+  const strArr = (v: unknown, n: number) =>
+    Array.isArray(v) ? (v.filter((x) => typeof x === "string").slice(0, n) as string[]) : undefined;
+  const tags = strArr(r.tags, 6); if (tags) out.tags = tags as EventEffect["tags"];
+  const optionIds = strArr(r.optionIds, 6); if (optionIds) out.optionIds = optionIds;
+  const preconditions = strArr(r.preconditions, 4); if (preconditions) out.preconditions = preconditions as EventEffect["preconditions"];
+  const exemptRegionIds = strArr(r.exemptRegionIds, 6); if (exemptRegionIds) out.exemptRegionIds = exemptRegionIds;
+  const exemptTags = strArr(r.exemptTags, 6); if (exemptTags) out.exemptTags = exemptTags as EventEffect["exemptTags"];
+  if (typeof r.amount === "number") {
+    out.amount =
+      kind === "swf-stipend" ? clampN(Math.round(r.amount), 10, 40)
+      : kind === "exposure-bonus" ? 1
+      : kind === "deal-bonus" ? clampN(Math.round(r.amount), 1, 3)
+      : kind === "trust-hit-rushed" ? clampN(Math.round(r.amount), 1, 3)
+      : clampN(Math.round(r.amount), 1, 6);
+  }
+  return out;
+}
+function sanitizeGeneratedEvent(
+  raw: { name: string; flavor: string; effectText: string; effects: unknown[] },
+  round: number,
+): WorldEvent {
+  const effects = (raw.effects ?? []).map(sanitizeEffect).filter((e): e is EventEffect => !!e).slice(0, 3);
+  return {
+    id: `gen-r${round}`,
+    name: String(raw.name ?? "").slice(0, 60) || "World event",
+    flavor: String(raw.flavor ?? "").slice(0, 240),
+    effectText: String(raw.effectText ?? "").slice(0, 240),
+    effects,
+  };
+}
 
 export function emptyScore(): ScoreBreakdown {
   return {
@@ -346,7 +399,7 @@ const BOT_PLAN: Record<LayerId, string[]> = {
 };
 
 function botBuild(table: TableState, bot: Player) {
-  const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
+  const event = currentEvent(table);
   const region = REGION_BY_ID[bot.regionId];
   if (!region) return;
   if (bot.actionThisRound) return; // bots also take just one action per round
@@ -375,7 +428,7 @@ function botBuild(table: TableState, bot: Player) {
 // ─── Off-switch roll ─────────────────────────────────────────────────────────
 function rollOffSwitch(table: TableState) {
   table.brokenDeals = undefined;
-  const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
+  const event = currentEvent(table);
   const rng = mulberry32(table.seed ^ hashStringToSeed(`r${table.round}-os`));
   const twice = event?.effects.some((e) => e.kind === "offswitch-twice") ?? false;
   const numRolls = twice ? 2 : 1;
@@ -448,7 +501,7 @@ function rollOffSwitch(table: TableState) {
 
 // ─── Score tick ──────────────────────────────────────────────────────────────
 function scoreTick(table: TableState) {
-  const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
+  const event = currentEvent(table);
   const dealBonus = event?.effects.find((e) => e.kind === "deal-bonus")?.amount ?? 0;
   const deals = activeDeals(table);
   for (const p of table.players) {
@@ -519,7 +572,7 @@ function setPick(table: TableState, player: Player, layer: LayerId, optionId: st
   const check = canBuild(player, option);
   if (!check.ok) return `Needs ${check.needs}.`;
 
-  const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
+  const event = currentEvent(table);
   const price = priceFor(option, region, event);
   if (price.frozen) return "Frozen this round by the world event — strike a deal.";
 
@@ -685,6 +738,15 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
     }
     case "setEventFlavor": {
       table.eventFlavor = { ...(table.eventFlavor ?? {}), ...action.flavor };
+      break;
+    }
+    case "setGeneratedEvent": {
+      // host-supplied, board-reactive event for this round — re-validated here
+      if (action.round !== table.round) break;
+      if (!table.generatedEvents) table.generatedEvents = {};
+      if (table.generatedEvents[action.round]) break; // first one wins, no churn
+      table.generatedEvents[action.round] = sanitizeGeneratedEvent(action.event, action.round);
+      pushLog(table, "event", `${table.generatedEvents[action.round].name} — ${table.generatedEvents[action.round].effectText}`);
       break;
     }
     case "proposeDeal": {

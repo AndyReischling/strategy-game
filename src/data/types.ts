@@ -352,6 +352,8 @@ export interface TableState {
   eventSeed?: number;
   /** LLM-generated, real-world-grounded flavor overrides per event id (mechanics unchanged) */
   eventFlavor?: Record<string, { name: string; flavor: string; effectText: string }>;
+  /** LLM-generated, board-reactive world events per round — replaces the static card for that round */
+  generatedEvents?: Record<number, WorldEvent>;
   eventId?: string;
   players: Player[];
   deals: Deal[];

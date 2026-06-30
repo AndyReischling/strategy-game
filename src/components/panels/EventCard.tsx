@@ -1,14 +1,17 @@
 import { useGame } from "../../store/useGame";
-import { EVENT_BY_ID } from "../../data/events";
+import { currentEvent } from "../../engine/game";
 import { Term } from "../Term";
 import { X, Check } from "../icons";
 
 export function EventCard({ onClose }: { onClose: () => void }) {
   const table = useGame((s) => s.table)!;
-  const event = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
+  const event = currentEvent(table);
   if (!event) return null;
-  // LLM-generated, real-world-grounded flavor (mechanics unchanged) if present
-  const fx = table.eventId ? table.eventFlavor?.[table.eventId] : undefined;
+  // A board-reactive generated event is already bespoke; otherwise apply any
+  // LLM flavor override to the static card (mechanics unchanged).
+  const generated = !!table.generatedEvents?.[table.round];
+  const fx = !generated && table.eventId ? table.eventFlavor?.[table.eventId] : undefined;
+  const live = generated || !!fx;
   const name = fx?.name || event.name;
   const flavor = fx?.flavor || event.flavor;
   const effectText = fx?.effectText || event.effectText;
@@ -16,7 +19,7 @@ export function EventCard({ onClose }: { onClose: () => void }) {
     <div className="event-overlay">
       <div className="event-card card offset c-orange">
         <button className="event-x btn btn-sm btn-ghost" onClick={onClose} aria-label="Dismiss"><X size={16} /></button>
-        <div className="event-kicker mono upper tiny">Round {table.round} · World event{fx ? " · live" : ""}</div>
+        <div className="event-kicker mono upper tiny">Round {table.round} · World event{live ? " · live" : ""}</div>
         <h2 className="event-name">{name}</h2>
         <p className="event-flavor">“{flavor}”</p>
         <div className="event-effect">

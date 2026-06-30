@@ -1,7 +1,8 @@
-import type { Player } from "../data/types";
+import type { Player, TableState } from "../data/types";
 import { REGION_BY_ID } from "../data/regions";
 import { OPTION_BY_ID } from "../data/layers";
 import { computeCoherence, computeSovereignty } from "../engine/scoring";
+import { exposedLayers } from "../engine/offswitch";
 
 // Client helpers for the optional Claude-backed features. Everything degrades
 // gracefully: if the LLM isn't enabled or a call fails, callers fall back to the
@@ -68,6 +69,52 @@ export async function judgePitch(pitch: string, stack: unknown): Promise<PitchVe
     const j = (await res.json()) as Partial<PitchVerdict>;
     if (typeof j.funded !== "boolean") return null;
     return { funded: j.funded, amount: Number(j.amount) || 0, reason: String(j.reason ?? "") };
+  } catch {
+    return null;
+  }
+}
+
+/** Compact, model-friendly snapshot of the board's political state for the scenario engine. */
+export function scenarioBoard(table: TableState) {
+  const name = (id: string) => table.players.find((x) => x.id === id)?.name ?? "?";
+  const players = table.players.filter((p) => p.ready).map((p) => {
+    const opts = Object.values(p.picks).flatMap((a) => a ?? []).map((id) => OPTION_BY_ID[id]).filter(Boolean);
+    return {
+      name: p.name,
+      region: REGION_BY_ID[p.regionId]?.name ?? p.regionId,
+      built: opts.map((o) => `${o.layer}:${o.name}`),
+      tags: [...new Set(opts.flatMap((o) => o.tags))],
+      sovereignty: Math.round(computeSovereignty(opts).fraction * 100) / 100,
+      exposed: exposedLayers(p).length,
+      credits: p.credits,
+    };
+  });
+  const deals = table.deals
+    .filter((d) => d.active && !d.broken)
+    .map((d) => `${name(d.fromPlayerId)} ${d.standing ? "standing " : ""}${d.kind} → ${name(d.toPlayerId)}`);
+  return { round: table.round, players, deals };
+}
+
+export interface GeneratedEvent {
+  name: string;
+  flavor: string;
+  effectText: string;
+  effects: unknown[];
+}
+
+/** Ask the server to invent a board-reactive world event for the coming round. */
+export async function generateScenario(board: unknown): Promise<GeneratedEvent | null> {
+  if (!llmEnabled()) return null;
+  try {
+    const res = await fetch("/api/scenario", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ board }),
+    });
+    if (!res.ok) return null;
+    const j = (await res.json()) as Partial<GeneratedEvent>;
+    if (typeof j.name !== "string" || !Array.isArray(j.effects)) return null;
+    return { name: j.name, flavor: String(j.flavor ?? ""), effectText: String(j.effectText ?? ""), effects: j.effects };
   } catch {
     return null;
   }

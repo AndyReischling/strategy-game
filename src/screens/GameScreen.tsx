@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useGame } from "../store/useGame";
 import { EVENT_BY_ID } from "../data/events";
-import { llmEnabled, generateEventFlavor } from "../net/llm";
+import { llmEnabled, generateEventFlavor, generateScenario, scenarioBoard } from "../net/llm";
 import { PhaseRail } from "../components/dash/PhaseRail";
 import { EventLog } from "../components/dash/EventLog";
 import { RivalsPanel } from "../components/dash/RivalsPanel";
@@ -67,6 +67,23 @@ export function GameScreen() {
       if (flavor) dispatch({ type: "setEventFlavor", flavor });
     });
   }, [table.eventDeck, table.eventFlavor, table.hostId, playerId, transport, dispatch]);
+
+  // Host generates a board-reactive world event each round and shares it with the
+  // table (everyone sees the same one). Falls back to the static card if the LLM
+  // is off or the call fails.
+  const scenarioRound = useRef(0);
+  useEffect(() => {
+    if (!llmEnabled()) return;
+    const isHost = table.hostId === playerId || transport === "local";
+    if (!isHost || table.phase === "lobby" || table.phase === "final") return;
+    if (table.generatedEvents?.[table.round]) return;
+    if (scenarioRound.current === table.round) return;
+    scenarioRound.current = table.round;
+    generateScenario(scenarioBoard(table)).then((ev) => {
+      if (ev) dispatch({ type: "setGeneratedEvent", round: table.round, event: ev });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table.round, table.hostId, playerId, transport]);
 
   if (table.phase === "final") return <FinalScreen />;
 
