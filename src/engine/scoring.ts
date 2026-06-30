@@ -133,16 +133,26 @@ export function computeScore(
   opts: { dealBonusPerDeal?: number } = {},
 ): ScoreBreakdown {
   const picks = pickedOptions(player);
-  const rawAdoption = picks.reduce((acc, o) => acc + o.adoption, 0);
+  const qtyOf = (o: LayerOption) => player.qty[o.layer]?.[o.id] ?? 1;
+  // Quantity scales adoption: more units of a pick reach more users (and cost more).
+  const rawAdoption = picks.reduce((acc, o) => acc + o.adoption * qtyOf(o), 0);
 
   // Interdependence gate: a stack only reaches users as well as it is complete.
-  // Reach is gated by how many of the five LAYERS are covered (extra options in
-  // a layer add capability, not reach), so every empty layer caps the WHOLE
-  // stack — balance beats grabbing the biggest individual numbers.
+  // Reach is gated by how many of the five LAYERS are covered, so every empty
+  // layer caps the WHOLE stack — balance beats grabbing the biggest numbers.
   const builtLayers = new Set(picks.map((o) => o.layer)).size;
   const reach = builtLayers === 0
     ? 0
     : Math.min(1, Math.max(CONFIG.reach.floor, CONFIG.reach.perLayer * builtLayers));
+
+  // Supply-chain gate: a layer's capacity is its total units. Output is throttled
+  // by the THINNEST layer — over-buying one layer you can't feed is wasted.
+  const layerUnits: Record<string, number> = {};
+  for (const o of picks) layerUnits[o.layer] = (layerUnits[o.layer] ?? 0) + qtyOf(o);
+  const caps = Object.values(layerUnits);
+  const balance = caps.length <= 1
+    ? 1
+    : Math.max(CONFIG.balance.floor, Math.min(...caps) / Math.max(...caps));
 
   const coh = computeCoherence(picks);
   const sov = computeSovereignty(picks);
@@ -154,7 +164,7 @@ export function computeScore(
   const capital = Math.round(player.credits * CONFIG.capital.perB * 10) / 10;
 
   const final =
-    rawAdoption * reach * coh.multiplier * sov.multiplier + dealRes.points + capital - fragilityPenalty;
+    rawAdoption * reach * balance * coh.multiplier * sov.multiplier + dealRes.points + capital - fragilityPenalty;
 
   const notes: string[] = [
     ...coh.notes,
@@ -162,8 +172,11 @@ export function computeScore(
   ];
   if (builtLayers > 0 && builtLayers < 5) {
     notes.push(`✕ Only ${builtLayers}/5 layers built — your stack reaches just ${Math.round(reach * 100)}% of its potential users. Complete the chain.`);
-  } else if (builtLayers === 5) {
+  } else   if (builtLayers === 5) {
     notes.push("✦ Full five-layer stack — every part of the chain is in place.");
+  }
+  if (caps.length > 1 && Math.min(...caps) < Math.max(...caps)) {
+    notes.push(`✕ Lopsided supply chain — your thinnest layer throttles output to ${Math.round(balance * 100)}%. Scale the whole stack together.`);
   }
   if (sov.fraction >= 0.5) notes.push("✦ Highly sovereign — the off-switch barely touches you.");
   if (sov.fraction <= -0.3) notes.push("✕ Heavily dependent — exposed to the off-switch.");
@@ -173,6 +186,7 @@ export function computeScore(
   return {
     rawAdoption,
     reach,
+    balance,
     coherence: coh.multiplier,
     sovereignty: sov.multiplier,
     deals: dealRes.points,

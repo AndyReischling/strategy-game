@@ -43,6 +43,13 @@ export const CONFIG = {
     perLayer: 0.2, // each of the 5 built layers adds 0.2 → a full stack reaches 1.0
     floor: 0.15, // a lone layer still reaches a sliver of users
   },
+
+  // Supply-chain balance gate: a layer's capacity is its total units (quantity).
+  // Output is throttled by the THINNEST layer — over-buying chips you can't feed
+  // into compute is wasted. balance = thinnest/thickest layer, floored.
+  balance: {
+    floor: 0.5, // worst case still delivers half — imbalance hurts but isn't fatal
+  },
   deals: {
     swapPoints: 1,
     accessPoints: 3, // unlocking a precondition is worth most

@@ -10,7 +10,7 @@ export type GameAction =
   | { type: "addBots"; count: number }
   | { type: "rename"; playerId: string; name: string }
   | { type: "startGame" }
-  | { type: "setPick"; playerId: string; layer: LayerId; optionId: string }
+  | { type: "setPick"; playerId: string; layer: LayerId; optionId: string; qty: number }
   | { type: "clearPick"; playerId: string; layer: LayerId; optionId: string }
   | { type: "pitchVC"; playerId: string; pitch: string } // deterministic VC (no LLM / fallback)
   | { type: "resolvePitch"; playerId: string; pitch: string; funded: boolean; amount: number; reason: string } // LLM verdict + engine guardrails

@@ -280,14 +280,19 @@ export interface Player {
   color: SpotColor;
   credits: number;
   picks: StackPicks;
-  /** what was paid per option (layer → optionId → cost), so undos refund correctly */
+  /** units bought per option (layer → optionId → quantity); a layer's capacity is its total units */
+  qty: Partial<Record<LayerId, Record<string, number>>>;
+  /** what was paid per option (layer → optionId → total cost), so undos refund correctly */
   paid: Partial<Record<LayerId, Record<string, number>>>;
   /** layers locked at the end of a prior round — their options are committed and can't be removed */
   lockedLayers: LayerId[];
   /** the layer this player built in this round (for the one-build-per-round rule & UI); null = no build */
   movedLayer: LayerId | null;
-  /** the specific option added this round — the only one that can be undone this round; null = none */
+  /** the specific option bought this round — the only purchase that can be undone this round; null = none */
   movedOption: string | null;
+  /** units & cost of this round's purchase, so it can be undone exactly */
+  movedQty: number;
+  movedCost: number;
   /** the one action this player has spent this round — build a layer, or raise capital. null = unused.
    *  (Deals are free and never spend this — you can deal and still build the same round.) */
   actionThisRound: "build" | "capital" | null;
@@ -311,6 +316,7 @@ export interface Player {
 export interface ScoreBreakdown {
   rawAdoption: number;
   reach: number; // interdependence gate (0..1): how complete the stack is
+  balance: number; // supply-chain gate (0..1): how matched your layer capacities are
   coherence: number; // multiplier
   sovereignty: number; // multiplier
   deals: number; // flat points

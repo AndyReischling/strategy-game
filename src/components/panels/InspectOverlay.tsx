@@ -77,7 +77,7 @@ export function InspectOverlay() {
                   {built ? (
                     opts.map((opt) => (
                       <span key={opt.id} className="insp-opt-line">
-                        <span className="insp-opt">{opt.name}</span>
+                        <span className="insp-opt">{opt.name}{(p.qty[l.id]?.[opt.id] ?? 1) > 1 ? ` ×${p.qty[l.id]![opt.id]}` : ""}</span>
                         <span className="insp-meta">
                           <span className="meter adopt"><TrendUp size={12} /> <b>{opt.adoption > 0 ? `+${opt.adoption}` : opt.adoption}</b></span>
                           <span className={`meter sov ${opt.sovereignty < 0 ? "neg" : ""}`}><ShieldCheck size={12} /> <b>{opt.sovereignty > 0 ? `+${opt.sovereignty}` : opt.sovereignty}</b></span>

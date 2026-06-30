@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useGame } from "../../store/useGame";
 import { LAYER_BY_ID } from "../../data/layers";
 import { REGION_BY_ID } from "../../data/regions";
@@ -30,6 +31,7 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
   const playerId = useGame((s) => s.playerId);
   const dispatch = useGame((s) => s.dispatch);
   const setDealDraft = useGame((s) => s.setDealDraft);
+  const [qtySel, setQtySel] = useState<Record<string, number>>({});
   const me = table.players.find((p) => p.id === playerId);
   if (!me) return null;
 
@@ -49,7 +51,7 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
         ? <>your pitch to General Catalyst was declined — turn burned</>
         : <>you raised capital</>;
 
-  const buy = (opt: LayerOption) => dispatch({ type: "setPick", playerId, layer: opt.layer, optionId: opt.id });
+  const buy = (opt: LayerOption, qty: number) => dispatch({ type: "setPick", playerId, layer: opt.layer, optionId: opt.id, qty });
 
   return (
     <div className="chooser">
@@ -71,9 +73,12 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
         {layerDef.options.map((opt) => {
           const price = priceFor(opt, region, event);
           const check = canBuild(me, opt);
-          const isPicked = (me.picks[opt.layer] ?? []).includes(opt.id);
-          const undoable = me.movedOption === opt.id; // only this round's addition can be removed
-          const affordable = me.credits >= price.cost;
+          const owned = me.qty[opt.layer]?.[opt.id] ?? 0;
+          const isPicked = owned > 0;
+          const undoable = me.movedOption === opt.id; // only this round's purchase can be undone
+          const q = Math.max(1, qtySel[opt.id] ?? 1);
+          const buyCost = price.cost * q;
+          const affordable = me.credits >= buyCost;
           const blocked = !check.ok || price.frozen;
           return (
             <div key={opt.id} className={`opt-card ${isPicked ? "picked" : ""} ${blocked ? "blocked" : ""}`}>
@@ -157,16 +162,22 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
               {price.frozen && <div className="oc-need tiny warn-text">Frozen this round by the world event.</div>}
 
               <div className="oc-action">
-                {isPicked ? (
-                  undoable ? (
-                    <button className="btn btn-sm btn-danger" onClick={() => dispatch({ type: "clearPick", playerId, layer: opt.layer, optionId: opt.id })}><X size={14} /> Undo</button>
-                  ) : (
-                    <button className="btn btn-sm btn-ghost" disabled><Check size={14} /> Built</button>
-                  )
+                {owned > 0 && <span className="oc-owned tiny mono" title="Units built">×{owned}</span>}
+                {undoable ? (
+                  <button className="btn btn-sm btn-danger" onClick={() => dispatch({ type: "clearPick", playerId, layer: opt.layer, optionId: opt.id })}><X size={14} /> Undo</button>
                 ) : (
-                  <button className="btn btn-sm btn-go" disabled={blocked || !affordable || moveLocked} onClick={() => buy(opt)}>
-                    {moveLocked ? "Build used" : affordable ? (<><Check size={14} /> Build {credits(price.cost)}</>) : "Can't afford"}
-                  </button>
+                  <>
+                    {!moveLocked && !blocked && (
+                      <span className="qty-step" role="group" aria-label="Quantity">
+                        <button type="button" className="qty-btn" disabled={q <= 1} onClick={() => setQtySel((s) => ({ ...s, [opt.id]: Math.max(1, q - 1) }))}>−</button>
+                        <span className="qty-n tnum">{q}</span>
+                        <button type="button" className="qty-btn" onClick={() => setQtySel((s) => ({ ...s, [opt.id]: q + 1 }))}>+</button>
+                      </span>
+                    )}
+                    <button className="btn btn-sm btn-go" disabled={blocked || !affordable || moveLocked} onClick={() => buy(opt, q)}>
+                      {moveLocked ? "Build used" : !affordable ? "Can't afford" : (<><Check size={14} /> {owned > 0 ? "Add" : "Build"} ×{q} · {credits(buyCost)}</>)}
+                    </button>
+                  </>
                 )}
               </div>
             </div>

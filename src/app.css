@@ -486,7 +486,13 @@ button.stack-block { cursor: pointer; }
 .oc-fix-text { line-height: 1.35; }
 .oc-fix-btn { align-self: flex-start; }
 .oc-fix.oc-cofund { border-color: var(--violet); }
-.oc-action { margin-top: 0.4rem; }
+.oc-action { margin-top: 0.4rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.oc-owned { background: var(--ink); color: var(--cream); border-radius: 999px; padding: 0.05rem 0.4rem; font-weight: 800; }
+.qty-step { display: inline-flex; align-items: center; gap: 0.3rem; border: 2px solid var(--ink); border-radius: var(--radius); padding: 0.05rem 0.2rem; background: var(--cream); }
+.qty-btn { width: 1.4rem; height: 1.4rem; line-height: 1; border: none; background: none; font-size: 1.1rem; font-weight: 800; cursor: pointer; padding: 0; }
+.qty-btn:disabled { opacity: 0.35; cursor: default; }
+.qty-n { min-width: 1rem; text-align: center; font-weight: 800; }
+.sb-units { background: var(--ink); color: var(--cream); border-radius: 999px; padding: 0 0.35rem; font-weight: 800; }
 
 /* Rivals */
 .rivals { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }

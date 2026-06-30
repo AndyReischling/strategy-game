@@ -82,6 +82,7 @@ export function emptyScore(): ScoreBreakdown {
   return {
     rawAdoption: 0,
     reach: 0,
+    balance: 1,
     coherence: 1,
     sovereignty: 1,
     deals: 0,
@@ -140,10 +141,13 @@ export function newPlayer(id: string, name: string, isHuman: boolean): Player {
     color: "blue",
     credits: CONFIG.startingBudget,
     picks: {},
+    qty: {},
     paid: {},
     lockedLayers: [],
     movedLayer: null,
     movedOption: null,
+    movedQty: 0,
+    movedCost: 0,
     actionThisRound: null,
     assets: [],
     unlocks: [],
@@ -379,11 +383,14 @@ function applyRoundStart(table: TableState) {
   for (const d of activeDeals(table)) {
     if (d.standing || d.terms.lease) moveCredits(table, d);
   }
-  // recurring option costs (rented weights, etc.)
+  // recurring option costs (rented weights, etc.) — scale with units held
   for (const p of table.players) {
-    for (const optionId of allPickIds(p)) {
-      const opt = OPTION_BY_ID[optionId];
-      if (opt?.recurring) p.credits = Math.max(0, p.credits - opt.recurring);
+    for (const [layer, ids] of Object.entries(p.picks)) {
+      for (const optionId of ids ?? []) {
+        const opt = OPTION_BY_ID[optionId];
+        const units = p.qty[layer as LayerId]?.[optionId] ?? 1;
+        if (opt?.recurring) p.credits = Math.max(0, p.credits - opt.recurring * units);
+      }
     }
     if (CONFIG.perRoundStipend) p.credits += CONFIG.perRoundStipend;
   }
@@ -415,9 +422,12 @@ function botBuild(table: TableState, bot: Player) {
       if (bot.credits >= price.cost) {
         bot.credits -= price.cost;
         bot.picks[layer] = [optId];
+        bot.qty[layer] = { [optId]: 1 };
         bot.paid[layer] = { [optId]: price.cost };
         bot.movedLayer = layer;
         bot.movedOption = optId;
+        bot.movedQty = 1;
+        bot.movedCost = price.cost;
         bot.actionThisRound = "build";
         return; // one build, then done for the round
       }
@@ -531,7 +541,7 @@ function enterPhase(table: TableState, phase: TableState["phase"]) {
       table.eventId = table.eventDeck[(table.round - 1) % table.eventDeck.length];
       if (table.round > 1) applyRoundStart(table);
       // fresh single action for everyone this round
-      for (const p of table.players) { p.movedLayer = null; p.movedOption = null; p.actionThisRound = null; }
+      for (const p of table.players) { p.movedLayer = null; p.movedOption = null; p.movedQty = 0; p.movedCost = 0; p.actionThisRound = null; }
       recomputeUnlocks(table);
       const ev = table.eventId ? EVENT_BY_ID[table.eventId] : undefined;
       pushLog(table, "round", `Round ${table.round} opens.`);
@@ -554,18 +564,18 @@ function enterPhase(table: TableState, phase: TableState["phase"]) {
 }
 
 // ─── Build / market spend ────────────────────────────────────────────────────
-function setPick(table: TableState, player: Player, layer: LayerId, optionId: string): string | null {
+function setPick(table: TableState, player: Player, layer: LayerId, optionId: string, qty: number): string | null {
   if (table.phase !== "build" && table.phase !== "trade" && table.phase !== "market-open")
     return "You can only build during the build & trade phases.";
-  // one build per round — adding any option spends your build action for the round
+  // one build per round — any purchase spends your build action for the round
   if (player.actionThisRound) {
     return player.actionThisRound === "build"
       ? "One build per round — you've already built this round. Add more next round."
       : "You've already raised capital this round — build next round.";
   }
+  const units = Math.max(1, Math.min(20, Math.round(qty)));
   const option = OPTION_BY_ID[optionId];
   if (!option || option.layer !== layer) return "Unknown option.";
-  if ((player.picks[layer] ?? []).includes(optionId)) return null; // already have it
   const region = REGION_BY_ID[player.regionId];
   if (!region) return "Pick a region first.";
 
@@ -576,13 +586,19 @@ function setPick(table: TableState, player: Player, layer: LayerId, optionId: st
   const price = priceFor(option, region, event);
   if (price.frozen) return "Frozen this round by the world event — strike a deal.";
 
-  if (player.credits < price.cost) return "Not enough capital.";
+  const cost = price.cost * units;
+  if (player.credits < cost) return "Not enough capital.";
 
-  player.credits -= price.cost;
-  player.picks[layer] = [...(player.picks[layer] ?? []), optionId];
-  player.paid[layer] = { ...(player.paid[layer] ?? {}), [optionId]: price.cost };
+  player.credits -= cost;
+  if (!(player.picks[layer] ?? []).includes(optionId)) {
+    player.picks[layer] = [...(player.picks[layer] ?? []), optionId];
+  }
+  player.qty[layer] = { ...(player.qty[layer] ?? {}), [optionId]: (player.qty[layer]?.[optionId] ?? 0) + units };
+  player.paid[layer] = { ...(player.paid[layer] ?? {}), [optionId]: (player.paid[layer]?.[optionId] ?? 0) + cost };
   player.movedLayer = layer;
   player.movedOption = optionId;
+  player.movedQty = units;
+  player.movedCost = cost;
   player.actionThisRound = "build"; // this round's single build is spent
   return null;
 }
@@ -650,7 +666,7 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       const p = findPlayer(table, action.playerId);
       if (!p) { error = "Not at this table."; break; }
       const before = Object.keys(p.picks).length;
-      error = setPick(table, p, action.layer, action.optionId) ?? undefined;
+      error = setPick(table, p, action.layer, action.optionId, action.qty) ?? undefined;
       if (!error && before < 5 && Object.keys(p.picks).length === 5) {
         pushLog(table, "build", `${p.name}'s five-layer stack is complete.`);
       }
@@ -660,24 +676,29 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       const p = findPlayer(table, action.playerId);
       if (!p) break;
       const { layer, optionId } = action;
-      if (!(p.picks[layer] ?? []).includes(optionId)) break; // nothing to remove
-      // Only this round's freshly-added option can be undone; earlier builds are locked in.
-      if (p.movedOption !== optionId) {
-        error = "Built options are locked in — you can only undo the option you added this round.";
+      // Only this round's purchase can be undone; earlier builds are locked in.
+      if (p.movedOption !== optionId || p.movedLayer !== layer) {
+        error = "Built units are locked in — you can only undo this round's purchase.";
         break;
       }
-      p.credits += p.paid[layer]?.[optionId] ?? 0;
-      const remaining = (p.picks[layer] ?? []).filter((id) => id !== optionId);
-      if (remaining.length === 0) delete p.picks[layer];
-      else p.picks[layer] = remaining;
-      const paidLayer = p.paid[layer];
-      if (paidLayer) {
-        delete paidLayer[optionId];
-        if (Object.keys(paidLayer).length === 0) delete p.paid[layer];
+      p.credits += p.movedCost; // refund exactly what was spent this round
+      const newQty = (p.qty[layer]?.[optionId] ?? 0) - p.movedQty;
+      const newPaid = (p.paid[layer]?.[optionId] ?? 0) - p.movedCost;
+      if (newQty <= 0) {
+        // the option was new this round — remove it entirely
+        if (p.qty[layer]) { delete p.qty[layer]![optionId]; if (Object.keys(p.qty[layer]!).length === 0) delete p.qty[layer]; }
+        if (p.paid[layer]) { delete p.paid[layer]![optionId]; if (Object.keys(p.paid[layer]!).length === 0) delete p.paid[layer]; }
+        const remaining = (p.picks[layer] ?? []).filter((id) => id !== optionId);
+        if (remaining.length === 0) delete p.picks[layer]; else p.picks[layer] = remaining;
+      } else {
+        // it had units from a prior round — just roll back this round's top-up
+        p.qty[layer]![optionId] = newQty;
+        p.paid[layer]![optionId] = newPaid;
       }
-      // undoing this round's build frees the action again
       p.movedLayer = null;
       p.movedOption = null;
+      p.movedQty = 0;
+      p.movedCost = 0;
       p.actionThisRound = null;
       break;
     }

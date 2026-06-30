@@ -34,6 +34,8 @@ export function ScorePanel() {
         <span className="op">×</span>
         <span className="sf" title="How complete your stack is — every empty layer caps your whole reach"><b>{s.reach.toFixed(2)}</b><small>Reach</small></span>
         <span className="op">×</span>
+        <span className="sf" title="Supply chain — your thinnest layer's units throttle the rest"><b>{s.balance.toFixed(2)}</b><small>Balance</small></span>
+        <span className="op">×</span>
         <span className="sf"><b>{s.coherence.toFixed(2)}</b><small><Term id="coherence">Coherence</Term></small></span>
         <span className="op">×</span>
         <span className="sf"><b>{s.sovereignty.toFixed(2)}</b><small><Term id="sovereign">Sovereignty</Term></small></span>
@@ -53,10 +55,11 @@ export function ScorePanel() {
       <details className="score-how">
         <summary>How scoring works — and how to build a coherent stack</summary>
         <div className="score-how-body tiny">
-          <p><b>Final = Adoption × Reach × Coherence × Sovereignty + Deals + Capital − Fragility.</b> The multipliers are the whole game: a giant adoption number gets cut down fast if your stack is incomplete, incoherent, or dependent.</p>
+          <p><b>Final = Adoption × Reach × Balance × Coherence × Sovereignty + Deals + Capital − Fragility.</b> The multipliers are the whole game: a giant adoption number gets cut down fast if your stack is incomplete, lopsided, incoherent, or dependent.</p>
           <ul>
-            <li><b><Term id="adoption">Adoption</Term> (users):</b> add up the adoption of all five picks. The flashiest single options post the biggest numbers — but that's only the start.</li>
-            <li><b>Reach (×0.15–1.0) — the interdependence gate:</b> your stack only reaches users as well as it's <i>complete</i>. Each built layer adds reach; <b>every empty layer caps your whole stack</b>. A brilliant model with no hosting reaches almost no one. This is why you can't just grab the biggest numbers and skip the rest.</li>
+            <li><b><Term id="adoption">Adoption</Term> (users):</b> add up each pick's adoption × how many <b>units</b> you bought of it. Buying more units scales adoption (and cost).</li>
+            <li><b>Reach (×0.15–1.0) — the interdependence gate:</b> your stack only reaches users as well as it's <i>complete</i>. Each built layer adds reach; <b>every empty layer caps your whole stack</b>. A brilliant model with no hosting reaches almost no one.</li>
+            <li><b>Balance (×0.5–1.0) — the supply chain:</b> each layer's capacity is its total units. Output is throttled by your <b>thinnest layer</b> — buy 5 units of chips with 1 of hosting and the chips are wasted. To scale up, grow the whole chain together.</li>
             <li><b><Term id="coherence">Coherence</Term> (×0.55–1.5):</b> do your picks fit together? Matching choices earn a bonus; clashing ones a penalty. <i>The "coherent stack."</i></li>
             <li><b><Term id="sovereign">Sovereignty</Term> (×0.45–1.5):</b> how much you own vs. rent. Home-built, owned, open pieces push it up; rented or foreign pieces drag it down — and invite the off-switch.</li>
             <li><b>Deals:</b> points for trades that fill a real gap — granting an unlock (access) is worth the most. You're structurally short in some layers; the deal table is how you complete the chain.</li>

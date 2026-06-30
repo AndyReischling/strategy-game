@@ -92,7 +92,9 @@ export function resolveOffSwitch(
 
   const adoptionLost = targeted.reduce((acc, t) => {
     const opt = OPTION_BY_ID[t.optionId];
-    const slash = outcome.broad ? opt.adoption * outcome.damage : opt.adoption;
+    const units = player.qty[t.layer]?.[t.optionId] ?? 1;
+    const base = opt.adoption * units; // losing an exposed layer costs all its units
+    const slash = outcome.broad ? base * outcome.damage : base;
     return acc + slash;
   }, 0);
 

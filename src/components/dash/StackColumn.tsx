@@ -43,6 +43,7 @@ export function StackColumn({ player, interactive, selectedLayer, onSelect, comp
     <div className={`stack-col c-${player.color}`}>
       {TOP_DOWN.map((l) => {
         const opts = (player.picks[l.id] ?? []).map((id) => OPTION_BY_ID[id]).filter(Boolean);
+        const units = Object.values(player.qty[l.id] ?? {}).reduce((a, b) => a + b, 0);
         const built = opts.length > 0;
         const label = built
           ? opts[0].name + (opts.length > 1 ? ` +${opts.length - 1}` : "")
@@ -66,6 +67,7 @@ export function StackColumn({ player, interactive, selectedLayer, onSelect, comp
               <span className="sb-opt">{label}</span>
             </span>
             <span className="sb-side">
+              {built && units > 0 && <span className="sb-units tiny mono" title="Units / capacity">{units}u</span>}
               {isMove && <span className="sb-move tiny">this turn</span>}
               {isExp && <Warning size={16} className="sb-warn" />}
               {built ? <Check size={16} className="sb-check" /> : interactive && !lockedRound ? <CaretRight size={16} /> : null}
