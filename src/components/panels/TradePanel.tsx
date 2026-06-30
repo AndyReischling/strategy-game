@@ -208,12 +208,8 @@ export function TradePanel() {
               <label className="check"><input type="checkbox" checked={standing} onChange={(e) => setStanding(e.target.checked)} /> Make it a <Term id="standing-deal">standing</Term> deal (auto-repeats)</label>
             )}
 
-            {me.actionThisRound && (
-              <p className="tiny warn-text" style={{ margin: "0.5rem 0 0" }}>
-                You've used your action this round ({me.actionThisRound === "build" ? "built a layer" : me.actionThisRound === "deal" ? "proposed a deal" : me.pitch && !me.pitch.funded ? "General Catalyst declined" : "raised capital"}). You can still accept offers below.
-              </p>
-            )}
-            <button className="btn btn-go" style={{ width: "100%", marginTop: "0.5rem" }} onClick={propose} disabled={!toId || !!me.actionThisRound}>Propose →</button>
+            <p className="tiny muted" style={{ margin: "0.5rem 0 0" }}>Deals are free — they don't use your build for the round, so you can strike one and still build what it unlocks.</p>
+            <button className="btn btn-go" style={{ width: "100%", marginTop: "0.5rem" }} onClick={propose} disabled={!toId}>Propose →</button>
           </section>
 
           <section className="raise card">
@@ -222,7 +218,7 @@ export function TradePanel() {
             <textarea className="pitch-box" rows={3} maxLength={240} value={pitch} onChange={(e) => setPitch(e.target.value)} placeholder="In two sentences: what are you building, and why is it the one to back?" />
             {me.actionThisRound ? (
               <p className="tiny warn-text" style={{ margin: "0 0 0.4rem" }}>
-                You've already used your one action this round ({me.actionThisRound === "build" ? "built a layer" : me.actionThisRound === "deal" ? "proposed a deal" : me.pitch && !me.pitch.funded ? "General Catalyst declined" : "raised capital"}). Pitching opens again next round — advance the table from the left rail.
+                You've already used your one action this round ({me.actionThisRound === "build" ? "built a layer" : me.pitch && !me.pitch.funded ? "General Catalyst declined" : "raised capital"}). Pitching opens again next round — advance the table from the left rail.
               </p>
             ) : pitch.trim().length < 12 ? (
               <p className="tiny muted" style={{ margin: "0 0 0.4rem" }}>Write at least a sentence ({pitch.trim().length}/12 characters) to pitch.</p>

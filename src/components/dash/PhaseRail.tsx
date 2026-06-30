@@ -12,9 +12,12 @@ export function PhaseRail() {
   const me = table.players.find((p) => p.id === playerId);
 
   // bots take their single action automatically at round start, so they always
-  // count as "moved"; we only wait on human players.
+  // count as "moved"; we only wait on human players. Deals are free but still
+  // count as a move, so a player who only deals doesn't stall the round.
   const ready = table.players.filter((p) => p.ready);
-  const moved = ready.filter((p) => p.actionThisRound || !p.isHuman).length;
+  const dealtThisRound = (id: string) =>
+    table.deals.some((d) => d.roundCreated === table.round && !d.declined && (d.fromPlayerId === id || d.toPlayerId === id));
+  const moved = ready.filter((p) => p.actionThisRound || !p.isHuman || dealtThisRound(p.id)).length;
   const waiting = ready.length - moved;
   const allMoved = waiting === 0;
   const lastRound = table.round >= CONFIG.totalRounds;

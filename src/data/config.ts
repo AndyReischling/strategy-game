@@ -19,18 +19,29 @@ export const CONFIG = {
     fragilityPenaltyPerMark: 1.5, // permanent score dent per fragility mark
   },
 
-  // Scoring multipliers (§7)
+  // Scoring multipliers (§7). Widened so the multipliers — not the raw adoption
+  // sum — decide the winner: a coherent, sovereign stack should beat a higher-
+  // adoption incoherent/dependent one.
   coherence: {
-    min: 0.7,
-    max: 1.3,
+    min: 0.55,
+    max: 1.5,
     base: 1.0,
-    perSynergy: 0.1,
-    perClash: 0.12,
+    perSynergy: 0.13,
+    perClash: 0.16,
   },
   sovereignty: {
-    min: 0.6,
-    max: 1.25,
+    min: 0.45,
+    max: 1.5,
     // maps normalized sovereignty fraction (-1..1) into [min..max]
+  },
+
+  // Reach gate (interdependence): realized adoption = rawAdoption × reach, where
+  // reach grows with how complete your stack is. Every empty layer caps the
+  // WHOLE stack's reach — a chain is only as strong as its weakest link, so you
+  // can't just grab the biggest individual numbers and ignore the rest.
+  reach: {
+    perLayer: 0.2, // each of the 5 built layers adds 0.2 → a full stack reaches 1.0
+    floor: 0.15, // a lone layer still reaches a sliver of users
   },
   deals: {
     swapPoints: 1,
@@ -39,6 +50,12 @@ export const CONFIG = {
     standingMultiplier: 1.6, // standing deals worth more
     gapFillBonus: 2, // a deal that fills a real gap
     breakPenalty: 5, // $B both sides lose if a standing deal breaks
+  },
+
+  // Reward capital kept on hand at scoring — a war chest is strategic value
+  // (dry powder for deals, resilience), so don't blow every dollar.
+  capital: {
+    perB: 0.1, // score points per $1B of unspent credits
   },
 };
 

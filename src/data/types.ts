@@ -285,9 +285,9 @@ export interface Player {
   lockedLayers: LayerId[];
   /** the single layer this player built/changed this round (for the build action & UI); null = no build */
   movedLayer: LayerId | null;
-  /** the one action this player has spent this round — build, propose a deal, or raise capital. null = unused.
-   *  (Accepting an offer made to you is free — it spends the proposer's action, not yours.) */
-  actionThisRound: "build" | "deal" | "capital" | null;
+  /** the one action this player has spent this round — build a layer, or raise capital. null = unused.
+   *  (Deals are free and never spend this — you can deal and still build the same round.) */
+  actionThisRound: "build" | "capital" | null;
   /** assets currently held (starts from region, changes via trades) */
   assets: AssetId[];
   /** preconditions unlocked via deals (recomputed each round from active deals) */
@@ -307,9 +307,11 @@ export interface Player {
 
 export interface ScoreBreakdown {
   rawAdoption: number;
+  reach: number; // interdependence gate (0..1): how complete the stack is
   coherence: number; // multiplier
   sovereignty: number; // multiplier
   deals: number; // flat points
+  capital: number; // flat points for unspent reserves
   fragilityPenalty: number;
   final: number;
   /** human-readable reasons for the panel */

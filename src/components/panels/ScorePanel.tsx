@@ -32,11 +32,14 @@ export function ScorePanel() {
       <div className="score-formula tnum">
         <span className="sf"><b className="tnum">{s.rawAdoption}</b><small><Term id="adoption">Adoption</Term></small></span>
         <span className="op">×</span>
+        <span className="sf" title="How complete your stack is — every empty layer caps your whole reach"><b>{s.reach.toFixed(2)}</b><small>Reach</small></span>
+        <span className="op">×</span>
         <span className="sf"><b>{s.coherence.toFixed(2)}</b><small><Term id="coherence">Coherence</Term></small></span>
         <span className="op">×</span>
         <span className="sf"><b>{s.sovereignty.toFixed(2)}</b><small><Term id="sovereign">Sovereignty</Term></small></span>
         <span className="op">+</span>
         <span className="sf"><b>{s.deals}</b><small>Deals</small></span>
+        {s.capital > 0 && (<><span className="op">+</span><span className="sf" title="Points for capital kept on hand"><b>{s.capital}</b><small>Capital</small></span></>)}
         {s.fragilityPenalty > 0 && (<><span className="op">−</span><span className="sf neg"><b>{s.fragilityPenalty}</b><small><Term id="fragility-mark">Fragility</Term></small></span></>)}
       </div>
 
@@ -50,15 +53,17 @@ export function ScorePanel() {
       <details className="score-how">
         <summary>How scoring works — and how to build a coherent stack</summary>
         <div className="score-how-body tiny">
-          <p><b>Final = Adoption × Coherence × Sovereignty + Deals − Fragility.</b> The two multipliers are the whole game: a giant adoption number gets cut down fast if your stack is incoherent or dependent.</p>
+          <p><b>Final = Adoption × Reach × Coherence × Sovereignty + Deals + Capital − Fragility.</b> The multipliers are the whole game: a giant adoption number gets cut down fast if your stack is incomplete, incoherent, or dependent.</p>
           <ul>
-            <li><b><Term id="adoption">Adoption</Term> (users):</b> add up the adoption of all five picks. Empty layers add nothing — fill all five.</li>
-            <li><b><Term id="coherence">Coherence</Term> (×0.7–1.3):</b> do your picks fit together? Matching choices earn a bonus; clashing ones a penalty. <i>This is the "coherent stack."</i></li>
-            <li><b><Term id="sovereign">Sovereignty</Term> (×0.6–1.25):</b> how much you own vs. rent. Home-built, owned, open pieces push it up; rented or foreign pieces drag it down.</li>
-            <li><b>Deals:</b> points for trades that fill a real gap — granting an unlock (access) is worth the most.</li>
+            <li><b><Term id="adoption">Adoption</Term> (users):</b> add up the adoption of all five picks. The flashiest single options post the biggest numbers — but that's only the start.</li>
+            <li><b>Reach (×0.15–1.0) — the interdependence gate:</b> your stack only reaches users as well as it's <i>complete</i>. Each built layer adds reach; <b>every empty layer caps your whole stack</b>. A brilliant model with no hosting reaches almost no one. This is why you can't just grab the biggest numbers and skip the rest.</li>
+            <li><b><Term id="coherence">Coherence</Term> (×0.55–1.5):</b> do your picks fit together? Matching choices earn a bonus; clashing ones a penalty. <i>The "coherent stack."</i></li>
+            <li><b><Term id="sovereign">Sovereignty</Term> (×0.45–1.5):</b> how much you own vs. rent. Home-built, owned, open pieces push it up; rented or foreign pieces drag it down — and invite the off-switch.</li>
+            <li><b>Deals:</b> points for trades that fill a real gap — granting an unlock (access) is worth the most. You're structurally short in some layers; the deal table is how you complete the chain.</li>
+            <li><b>Capital:</b> points for credits kept on hand. A war chest is real value — dry powder for deals and resilience — so don't blow every dollar.</li>
             <li><b><Term id="fragility-mark">Fragility</Term>:</b> permanent dents when the off-switch cracks a rented/foreign layer.</li>
           </ul>
-          <p><b>Building a coherent stack:</b> pick options whose tags reinforce each other. Good fits: open weights + fine-tuning, on-device + lean compute, sovereign compute + owned weights + sovereign hosting (nothing to switch off). Clashes to avoid: a sovereign storefront on a foreign cloud, open-sourcing a model you only rent, or frontier training on tiny compute.</p>
+          <p><b>How the pieces interlock:</b> Reach rewards <i>finishing</i> the chain, Coherence rewards picks that <i>fit</i>, and Sovereignty rewards <i>owning</i> it. The non-obvious winning line: a complete, coherent, mostly-owned stack — usually impossible alone, so you fill your gaps at the deal table. Good fits: open weights + fine-tuning, on-device + lean compute, sovereign compute + owned weights + sovereign hosting. Clashes to avoid: a sovereign storefront on a foreign cloud, open-sourcing a model you only rent, or frontier training on tiny compute.</p>
         </div>
       </details>
 

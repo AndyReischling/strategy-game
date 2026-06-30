@@ -134,28 +134,47 @@ export function computeScore(
   const picks = pickedOptions(player);
   const rawAdoption = picks.reduce((acc, o) => acc + o.adoption, 0);
 
+  // Interdependence gate: a stack only reaches users as well as it is complete.
+  // Every empty layer caps the WHOLE stack, so balance beats grabbing the
+  // biggest individual numbers.
+  const builtLayers = picks.length;
+  const reach = builtLayers === 0
+    ? 0
+    : Math.min(1, Math.max(CONFIG.reach.floor, CONFIG.reach.perLayer * builtLayers));
+
   const coh = computeCoherence(picks);
   const sov = computeSovereignty(picks);
   const dealRes = computeDeals(player, deals, opts.dealBonusPerDeal ?? 0);
 
   const fragilityPenalty = player.fragility.length * CONFIG.offSwitch.fragilityPenaltyPerMark;
 
+  // Reward a war chest kept on hand (dry powder for deals / resilience).
+  const capital = Math.round(player.credits * CONFIG.capital.perB * 10) / 10;
+
   const final =
-    rawAdoption * coh.multiplier * sov.multiplier + dealRes.points - fragilityPenalty;
+    rawAdoption * reach * coh.multiplier * sov.multiplier + dealRes.points + capital - fragilityPenalty;
 
   const notes: string[] = [
     ...coh.notes,
     ...dealRes.notes,
   ];
+  if (builtLayers > 0 && builtLayers < 5) {
+    notes.push(`✕ Only ${builtLayers}/5 layers built — your stack reaches just ${Math.round(reach * 100)}% of its potential users. Complete the chain.`);
+  } else if (builtLayers === 5) {
+    notes.push("✦ Full five-layer stack — every part of the chain is in place.");
+  }
   if (sov.fraction >= 0.5) notes.push("✦ Highly sovereign — the off-switch barely touches you.");
   if (sov.fraction <= -0.3) notes.push("✕ Heavily dependent — exposed to the off-switch.");
+  if (capital > 0) notes.push(`✦ +${capital} from capital kept in reserve.`);
   if (player.fragility.length) notes.push(`✕ ${player.fragility.length} fragility mark(s) from off-switch hits.`);
 
   return {
     rawAdoption,
+    reach,
     coherence: coh.multiplier,
     sovereignty: sov.multiplier,
     deals: dealRes.points,
+    capital,
     fragilityPenalty,
     final: Math.max(0, Math.round(final * 10) / 10),
     notes,

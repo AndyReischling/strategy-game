@@ -28,9 +28,11 @@ const BOT_NAMES = ["Atlas", "Borealis", "Cygnus", "Delta", "Echo", "Fjord"];
 export function emptyScore(): ScoreBreakdown {
   return {
     rawAdoption: 0,
+    reach: 0,
     coherence: 1,
     sovereignty: 1,
     deals: 0,
+    capital: 0,
     fragilityPenalty: 0,
     final: 0,
     notes: [],
@@ -300,8 +302,6 @@ function resolveBotDeals(table: TableState) {
       pushLog(table, "deal", `${bot.name} countered ${other?.name}'s offer.`);
     } else {
       deal.declined = true;
-      const proposer = findPlayer(table, deal.fromPlayerId);
-      if (proposer && deal.roundCreated === table.round && proposer.actionThisRound === "deal") proposer.actionThisRound = null;
       pushLog(table, "deal", `${bot.name} declined ${other?.name}'s offer.`);
     }
   }
@@ -684,12 +684,8 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
         error = "Deals happen during the build & trade phases.";
         break;
       }
-      if (from.actionThisRound) {
-        error = from.actionThisRound === "build"
-          ? "One action per round — you built this round. Propose deals next round (you can still accept offers)."
-          : "One action per round — you've already acted this round.";
-        break;
-      }
+      // Deals are free — proposing one does NOT spend your build/pitch action, so
+      // you can strike a deal and then build what it unlocks in the same round.
       const deal: Deal = {
         id: `deal-${table.deals.length}-${Math.floor(table.seed % 9999)}-${Date.now() % 100000}`,
         kind: action.kind,
@@ -704,7 +700,6 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
         counters: 0,
         lastActorId: from.id,
       };
-      from.actionThisRound = "deal"; // proposing a deal is your action this round
       table.deals.push(deal);
       // a bot recipient answers instantly via resolveBotDeals() at the end of apply;
       // a human recipient gets a blocking modal and must accept / decline / counter.
@@ -747,13 +742,9 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
     case "declineDeal": {
       const deal = table.deals.find((d) => d.id === action.dealId);
       if (!deal || deal.active || deal.declined) break;
-      // refund the proposer's action — a turned-down offer shouldn't burn a turn
-      const proposer = findPlayer(table, deal.fromPlayerId);
-      if (proposer && deal.roundCreated === table.round && proposer.actionThisRound === "deal") {
-        proposer.actionThisRound = null;
-      }
       deal.declined = true;
       deal.active = false;
+      const proposer = findPlayer(table, deal.fromPlayerId);
       const t = findPlayer(table, deal.toPlayerId);
       pushLog(table, "deal", `${t?.name} declined ${proposer?.name}'s offer.`);
       break;
@@ -764,11 +755,6 @@ export function applyAction(table: TableState, action: GameAction): { error?: st
       // Agreed deals are binding: you can only withdraw a proposal that hasn't
       // been accepted yet (or one that's already broken/declined — a no-op).
       if (deal.active) { error = "That deal is locked in — agreed deals can't be cancelled."; break; }
-      // refund the proposer's action if they withdraw a deal they proposed this round
-      const proposer = findPlayer(table, deal.fromPlayerId);
-      if (proposer && action.playerId === proposer.id && deal.roundCreated === table.round && proposer.actionThisRound === "deal") {
-        proposer.actionThisRound = null;
-      }
       deal.declined = true;
       deal.active = false;
       recomputeUnlocks(table);
