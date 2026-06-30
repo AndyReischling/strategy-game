@@ -518,7 +518,7 @@ button.stack-block { cursor: pointer; }
 .howto-kicker { letter-spacing: 0.12em; opacity: 0.6; }
 .howto-title { font-size: clamp(2rem, 6vw, 2.8rem); margin: 0.3rem 0 0.8rem; }
 .howto-lead { font-size: 1rem; line-height: 1.5; font-weight: 500; margin: 0.5rem 0; }
-.howto-page { min-height: 340px; }
+.howto-page { flex-shrink: 0; }
 
 .howto-loop { display: flex; align-items: stretch; gap: 0.5rem; margin: 1.2rem 0; }
 .loop-step { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.2rem; border: var(--outline) solid var(--ink); border-radius: var(--radius); padding: 0.7rem 0.4rem; background: var(--cream); box-shadow: var(--shadow-soft); }
@@ -551,7 +551,7 @@ button.stack-block { cursor: pointer; }
 .howto-rule svg { flex: none; margin-top: 0.15rem; color: var(--orange); }
 .howto-rule p { margin: 0; font-size: 0.9rem; line-height: 1.4; }
 
-.howto-nav { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 1.2rem; border-top: 2px dotted var(--ink); padding-top: 0.9rem; }
+.howto-nav { flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; margin-top: 1.2rem; border-top: 2px dotted var(--ink); padding-top: 0.9rem; }
 .howto-dots { display: flex; gap: 0.4rem; }
 .howto-dot { width: 0.7rem; height: 0.7rem; border-radius: 999px; border: 2px solid var(--ink); background: var(--cream); padding: 0; }
 .howto-dot.on { background: var(--ink); }
