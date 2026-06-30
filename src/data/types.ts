@@ -226,11 +226,14 @@ export type Phase =
   | "score"
   | "final";
 
-export type DealKind = "swap" | "asset" | "access" | "standing";
+export type DealKind = "swap" | "asset" | "access" | "standing" | "supply";
 
 export interface DealTerms {
   creditsFromTo?: number; // credits moving from -> to (negative = other direction)
   assetId?: AssetId; // asset transferred/leased
+  /** built-option units traded: `units` of `optionId` move from the owner to the other side */
+  optionId?: string;
+  units?: number;
   lease?: boolean; // true = lease (recurring), false = permanent sale
   leaseRounds?: number;
   grantsPrecondition?: Precondition; // "open a door"

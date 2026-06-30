@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useGame } from "../../store/useGame";
 import { REGION_BY_ID } from "../../data/regions";
+import { OPTION_BY_ID } from "../../data/layers";
 import { Term } from "../Term";
 import { credits } from "../util";
 import { Bank, Check, X, Handshake } from "../icons";
@@ -29,6 +30,7 @@ const inWords = (billions: number): string => {
 const KINDS: { id: DealKind; label: string; hint: string; term: string; desc: string }[] = [
   { id: "swap", label: "Cash", hint: "pay or get paid", term: "deal-swap", desc: "A one-time cash payment between you and another player — no strings attached." },
   { id: "asset", label: "Asset", hint: "hand over a holding", term: "deal-asset", desc: "Sell or lease a holding you own — like the ASML token, renewable sites, or a market channel." },
+  { id: "supply", label: "Supply", hint: "trade built units", term: "deal-asset", desc: "Buy or sell units of a built layer — e.g. 2 of someone's spare NVIDIA chips. Cash and units flow opposite: the buyer pays, the owner hands over units." },
   { id: "access", label: "Access", hint: "open a door", term: "deal-access", desc: "Grant a partner an unlock so they can build a layer they're currently blocked on." },
   { id: "standing", label: "Standing", hint: "repeats each round", term: "standing-deal", desc: "An ongoing deal that auto-repeats every round until someone cancels it — or it breaks under pressure." },
 ];
@@ -45,6 +47,8 @@ export function TradePanel() {
   const [iPay, setIPay] = useState(0);
   const [theyPay, setTheyPay] = useState(0);
   const [assetId, setAssetId] = useState<AssetId | "">("");
+  const [supplySel, setSupplySel] = useState(""); // "me:optId" | "them:optId"
+  const [supplyUnits, setSupplyUnits] = useState(1);
   const [lease, setLease] = useState(false);
   const [precond, setPrecond] = useState<Precondition>("deal-compute");
   const [standing, setStanding] = useState(false);
@@ -73,14 +77,21 @@ export function TradePanel() {
   const theirAssets = to?.assets ?? [];
   const tradableAssets = kind === "asset" ? [...myAssets, ...theirAssets] : [];
 
+  // built-option units each side holds, for the Supply deal
+  const builtUnits = (pl: typeof to) =>
+    pl ? Object.values(pl.qty).flatMap((m) => Object.entries(m ?? {})).map(([oid, n]) => ({ optionId: oid, units: n })) : [];
+  const myBuilt = kind === "supply" ? builtUnits(me) : [];
+  const theirBuilt = kind === "supply" ? builtUnits(to) : [];
+
   const propose = () => {
     if (!toId) return;
     const terms: Deal["terms"] = { creditsFromTo: iPay - theyPay };
     if (kind === "asset" && assetId) { terms.assetId = assetId as AssetId; terms.lease = lease; terms.fillsGap = true; }
     if (kind === "access") { terms.grantsPrecondition = precond; terms.fillsGap = true; }
+    if (kind === "supply" && supplySel) { terms.optionId = supplySel.split(":")[1]; terms.units = supplyUnits; terms.fillsGap = true; }
     if (standing && investorCut > 0) { terms.investorCut = investorCut / 100; }
     dispatch({ type: "proposeDeal", playerId, toPlayerId: toId, kind, terms, standing: standing || kind === "standing" });
-    setIPay(0); setTheyPay(0); setAssetId(""); setInvestorCut(0);
+    setIPay(0); setTheyPay(0); setAssetId(""); setInvestorCut(0); setSupplySel(""); setSupplyUnits(1);
   };
 
   const onPitch = async () => {
@@ -190,6 +201,26 @@ export function TradePanel() {
               </div>
             )}
 
+            {kind === "supply" && (
+              <div className="row gap-2 wrap">
+                <label className="field grow"><span>Built units to trade</span>
+                  <select value={supplySel} onChange={(e) => setSupplySel(e.target.value)}>
+                    <option value="">— choose —</option>
+                    {myBuilt.map((b) => <option key={`m-${b.optionId}`} value={`me:${b.optionId}`}>{OPTION_BY_ID[b.optionId]?.name ?? b.optionId} (yours ×{b.units})</option>)}
+                    {theirBuilt.map((b) => <option key={`t-${b.optionId}`} value={`them:${b.optionId}`}>{OPTION_BY_ID[b.optionId]?.name ?? b.optionId} (theirs ×{b.units})</option>)}
+                  </select>
+                </label>
+                <label className="field"><span>How many units</span>
+                  <input type="number" min={1} value={supplyUnits} onChange={(e) => setSupplyUnits(Math.max(1, +e.target.value))} />
+                </label>
+                {supplySel && (
+                  <p className="tiny muted" style={{ flexBasis: "100%", margin: 0 }}>
+                    {supplySel.startsWith("them:") ? "You're buying — set \"You pay\" above." : "You're selling — set \"They pay\" above."}
+                  </p>
+                )}
+              </div>
+            )}
+
             {kind === "access" && (
               <label className="field"><span><Term id="deal-access">Unlock</Term> this deal opens <span className="muted">(both of you can use it)</span></span>
                 <select value={precond} onChange={(e) => setPrecond(e.target.value as Precondition)}>
@@ -204,7 +235,7 @@ export function TradePanel() {
               </label>
             )}
 
-            {kind !== "standing" && (
+            {kind !== "standing" && kind !== "supply" && (
               <label className="check"><input type="checkbox" checked={standing} onChange={(e) => setStanding(e.target.checked)} /> Make it a <Term id="standing-deal">standing</Term> deal (auto-repeats)</label>
             )}
 

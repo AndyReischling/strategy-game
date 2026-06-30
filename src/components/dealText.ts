@@ -1,4 +1,5 @@
 import type { Deal, TableState, Precondition } from "../data/types";
+import { OPTION_BY_ID } from "../data/layers";
 import { credits } from "./util";
 
 export const ASSET_LABEL: Record<string, string> = {
@@ -30,6 +31,12 @@ export function summarizeDeal(d: Deal, table: TableState): string {
   if (c > 0) parts.push(`${from?.name} pays ${credits(c)} → ${t?.name}`);
   if (c < 0) parts.push(`${t?.name} pays ${credits(-c)} → ${from?.name}`);
   if (d.terms.assetId) parts.push(`${d.terms.lease ? "leases" : "sells"} ${ASSET_LABEL[d.terms.assetId] ?? d.terms.assetId}`);
+  if (d.terms.optionId && d.terms.units) {
+    const name = OPTION_BY_ID[d.terms.optionId]?.name ?? d.terms.optionId;
+    // the buyer pays cash, so the units flow opposite the cash
+    const buyer = c > 0 ? from : c < 0 ? t : undefined;
+    parts.push(buyer ? `${buyer.name} gets ${d.terms.units}× ${name}` : `${d.terms.units}× ${name} change hands`);
+  }
   if (d.terms.grantsPrecondition) parts.push(`unlocks ${PRECOND_LABEL[d.terms.grantsPrecondition] ?? d.terms.grantsPrecondition}`);
   if (d.terms.investorCut) parts.push(`${from?.name} backs ${t?.name} for ${Math.round(d.terms.investorCut * 100)}% of their score`);
   return parts.join(" · ") || "a favor";

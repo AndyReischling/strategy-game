@@ -267,9 +267,46 @@ function moveCredits(table: TableState, deal: Deal) {
   to.credits += c;
 }
 
+// Transfer built-option units between players. The buyer pays cash (handled by
+// moveCredits) and receives `units`; the owner of those units hands them over.
+// Cash and units flow opposite directions, so the cash sign tells us who's buying.
+function moveUnits(table: TableState, deal: Deal) {
+  const { optionId, units } = deal.terms;
+  if (!optionId || !units || units <= 0) return;
+  const opt = OPTION_BY_ID[optionId];
+  if (!opt) return;
+  const layer = opt.layer;
+  const from = findPlayer(table, deal.fromPlayerId);
+  const to = findPlayer(table, deal.toPlayerId);
+  if (!from || !to) return;
+
+  const c = deal.terms.creditsFromTo ?? 0; // >0 = from pays to → from is the buyer
+  let seller = c > 0 ? to : c < 0 ? from : ((from.qty[layer]?.[optionId] ?? 0) >= (to.qty[layer]?.[optionId] ?? 0) ? from : to);
+  let buyer = seller === from ? to : from;
+  if ((seller.qty[layer]?.[optionId] ?? 0) <= 0) { const t = seller; seller = buyer; buyer = t; } // whoever actually holds them sells
+
+  const have = seller.qty[layer]?.[optionId] ?? 0;
+  const n = Math.min(units, have);
+  if (n <= 0) return;
+
+  // remove from seller
+  seller.qty[layer]![optionId] = have - n;
+  if (seller.qty[layer]![optionId] <= 0) {
+    delete seller.qty[layer]![optionId];
+    if (Object.keys(seller.qty[layer]!).length === 0) delete seller.qty[layer];
+    seller.picks[layer] = (seller.picks[layer] ?? []).filter((id) => id !== optionId);
+    if (seller.picks[layer]!.length === 0) delete seller.picks[layer];
+    if (seller.paid[layer]) { delete seller.paid[layer]![optionId]; if (Object.keys(seller.paid[layer]!).length === 0) delete seller.paid[layer]; }
+  }
+  // add to buyer
+  buyer.qty[layer] = { ...(buyer.qty[layer] ?? {}), [optionId]: (buyer.qty[layer]?.[optionId] ?? 0) + n };
+  if (!(buyer.picks[layer] ?? []).includes(optionId)) buyer.picks[layer] = [...(buyer.picks[layer] ?? []), optionId];
+}
+
 function executeDealOnce(table: TableState, deal: Deal) {
   moveCredits(table, deal);
   moveAsset(table, deal);
+  moveUnits(table, deal);
   if (deal.terms.investorCut) {
     const to = findPlayer(table, deal.toPlayerId);
     if (to && !to.backers.some((b) => b.investorId === deal.fromPlayerId)) {
@@ -314,6 +351,11 @@ function botDealValue(table: TableState, d: Deal, bot: Player): { value: number;
     nonCash += botHolds ? -worth : worth;
   }
   if (d.terms.investorCut) nonCash += isTo ? 4 : -2;
+  if (d.terms.optionId && d.terms.units) {
+    const worth = (OPTION_BY_ID[d.terms.optionId]?.adoption ?? 1) * d.terms.units;
+    const botIsBuyer = (c > 0 && !isTo) || (c < 0 && isTo); // the side paying cash receives the units
+    nonCash += botIsBuyer ? worth : -worth;
+  }
   return { value: netCash + nonCash, netCash };
 }
 
