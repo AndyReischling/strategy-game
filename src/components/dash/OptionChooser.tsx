@@ -136,7 +136,7 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
                     }
                     const granters = others.filter((p) => playerCanGrant(p, req));
                     const isAsmlAsset = req === "asml-token";
-                    const partner = granters[0] ?? others[0];
+                    const partner = granters[0]; // only someone who can actually grant it
                     const fix = () => {
                       if (isAsmlAsset) setDealDraft({ toId: partner?.id, kind: "asset", assetId: "asml-token" });
                       else setDealDraft({ toId: partner?.id, kind: "access", precond: req });

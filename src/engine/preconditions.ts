@@ -1,5 +1,6 @@
-import type { Player, LayerOption, Precondition } from "../data/types";
+import type { Player, LayerOption, Precondition, AssetId, StrengthDim } from "../data/types";
 import { OPTION_BY_ID } from "../data/layers";
+import { REGION_BY_ID } from "../data/regions";
 
 /** Preconditions a region satisfies on its own, from its Powers/Assets. */
 export function regionInherentUnlocks(regionId: string): Precondition[] {
@@ -49,13 +50,41 @@ const NEEDS_LABEL: Record<Precondition, string> = {
   "oss-grant": "an OSS Commons player at the table, willing to grant",
 };
 
-/** Does this player already satisfy `req` (and could therefore grant it in a deal)? */
+// Assets whose holder can grant a precondition to a partner (they actually
+// control the thing being unlocked).
+const ASSET_GRANTS: Partial<Record<AssetId, Precondition[]>> = {
+  "asml-token": ["asml-token", "supply-allocation"],
+  "chip-allocation": ["supply-allocation"], // Japan/Korea's politically-safe chip pool
+  "nscale-capacity": ["deal-compute"], // leasable sovereign GPU capacity
+  "renewable-sites": ["renewable-power", "deal-compute"], // green data-center sites
+  "enterprise-channel": ["market-channel"],
+  "consumer-channel": ["market-channel"],
+  "industrial-demand": ["market-channel"],
+  "open-weights-grant": ["open-weights", "oss-grant"],
+};
+
+// A region that is structurally strong in a dimension can supply it.
+const STRENGTH_GRANTS: Partial<Record<Precondition, StrengthDim>> = {
+  "supply-allocation": "chips",
+  "deal-compute": "compute",
+  "market-channel": "market",
+};
+
+/** Can this player actually grant `req` to a partner — from their region, assets, or structural strength? */
 export function playerCanGrant(p: Player, req: Precondition): boolean {
-  if (req === "none") return false;
-  if (req === "asml-token") return p.assets.includes("asml-token");
-  if (req === "supply-allocation")
-    return p.assets.includes("asml-token") || p.unlocks.includes(req) || regionInherentUnlocks(p.regionId).includes(req);
-  return p.unlocks.includes(req) || regionInherentUnlocks(p.regionId).includes(req);
+  if (req === "none" || req === "closed-partner") return false;
+  // A shared-build / coalition commitment is a promise any partner can make.
+  if (req === "co-funder-1" || req === "co-funders-2") return true;
+  // The region's own inherent strengths (nuclear power, market, standing, …).
+  if (regionInherentUnlocks(p.regionId).includes(req)) return true;
+  // An asset the player holds that confers the ability to grant.
+  for (const a of p.assets) {
+    if (ASSET_GRANTS[a]?.includes(req)) return true;
+  }
+  // A structurally strong region can supply what it's strong in.
+  const dim = STRENGTH_GRANTS[req];
+  if (dim && (REGION_BY_ID[p.regionId]?.strengths[dim] ?? 0) >= 2) return true;
+  return false;
 }
 
 export function canBuild(player: Player, option: LayerOption): BuildCheck {

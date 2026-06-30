@@ -19,7 +19,7 @@ import {
 } from "../data/events";
 import { priceFor } from "./pricing";
 import { computeScore, computeCoherence, computeSovereignty } from "./scoring";
-import { canBuild } from "./preconditions";
+import { canBuild, playerCanGrant } from "./preconditions";
 import { resolveOffSwitch } from "./offswitch";
 import { mulberry32, rollDie, hashStringToSeed } from "./rng";
 
@@ -163,11 +163,14 @@ function recomputeUnlocks(table: TableState) {
     for (const d of activeDeals(table)) {
       const gp = d.terms.grantsPrecondition;
       if (!gp) continue;
-      // Both sides of an access/co-fund deal hold the unlock. The partner who
-      // grants it already had it; the player who set the deal up to clear their
-      // OWN blocked build needs it on their side too — otherwise they pay and
-      // stay locked.
-      if (d.toPlayerId === p.id || d.fromPlayerId === p.id) unlocks.add(gp);
+      const from = findPlayer(table, d.fromPlayerId);
+      const to = findPlayer(table, d.toPlayerId);
+      // A party receives the unlock only if their COUNTERPARTY can actually
+      // grant it (region strength, an asset, or — for co-funding — any partner).
+      // This is symmetric, so it works whether the holder offers access or the
+      // player who needs it proposes the deal.
+      if (p.id === d.fromPlayerId && to && playerCanGrant(to, gp)) unlocks.add(gp);
+      if (p.id === d.toPlayerId && from && playerCanGrant(from, gp)) unlocks.add(gp);
     }
     p.unlocks = Array.from(unlocks);
   }
