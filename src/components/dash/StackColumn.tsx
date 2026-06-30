@@ -22,13 +22,13 @@ export function StackColumn({ player, interactive, selectedLayer, onSelect, comp
     return (
       <div className={`stack-compact c-${player.color}`}>
         {TOP_DOWN.map((l) => {
-          const optId = player.picks[l.id];
+          const opts = (player.picks[l.id] ?? []).map((id) => OPTION_BY_ID[id]).filter(Boolean);
           const Icon = LAYER_ICON[l.id];
           return (
             <span
               key={l.id}
-              className={`sc-cell ${optId ? "filled" : "empty"} ${exposed.has(l.id) ? "exp" : ""}`}
-              title={optId ? `${l.name}: ${OPTION_BY_ID[optId]?.name}` : `${l.name}: empty`}
+              className={`sc-cell ${opts.length ? "filled" : "empty"} ${exposed.has(l.id) ? "exp" : ""}`}
+              title={opts.length ? `${l.name}: ${opts.map((o) => o.name).join(", ")}` : `${l.name}: empty`}
             >
               <Icon size={13} />
             </span>
@@ -42,8 +42,11 @@ export function StackColumn({ player, interactive, selectedLayer, onSelect, comp
   return (
     <div className={`stack-col c-${player.color}`}>
       {TOP_DOWN.map((l) => {
-        const optId = player.picks[l.id];
-        const opt = optId ? OPTION_BY_ID[optId] : undefined;
+        const opts = (player.picks[l.id] ?? []).map((id) => OPTION_BY_ID[id]).filter(Boolean);
+        const built = opts.length > 0;
+        const label = built
+          ? opts[0].name + (opts.length > 1 ? ` +${opts.length - 1}` : "")
+          : moveUsed && player.movedLayer !== l.id ? "Next round" : "Choose an option";
         const Icon = LAYER_ICON[l.id];
         const isSel = selectedLayer === l.id;
         const isExp = exposed.has(l.id);
@@ -53,19 +56,19 @@ export function StackColumn({ player, interactive, selectedLayer, onSelect, comp
         return (
           <Tag
             key={l.id}
-            className={`stack-block ${opt ? "built" : "empty"} ${isSel ? "sel" : ""} ${isExp ? "exposed" : ""} ${lockedRound ? "locked-round" : ""}`}
+            className={`stack-block ${built ? "built" : "empty"} ${isSel ? "sel" : ""} ${isExp ? "exposed" : ""} ${lockedRound ? "locked-round" : ""}`}
             onClick={interactive ? () => onSelect?.(l.id) : undefined}
             {...(interactive ? { type: "button" as const } : {})}
           >
             <span className="sb-icon"><Icon size={20} /></span>
             <span className="sb-text">
               <span className="sb-layer tiny mono">{l.index} · {l.name}</span>
-              <span className="sb-opt">{opt ? opt.name : lockedRound ? "Next round" : "Choose an option"}</span>
+              <span className="sb-opt">{label}</span>
             </span>
             <span className="sb-side">
               {isMove && <span className="sb-move tiny">this turn</span>}
               {isExp && <Warning size={16} className="sb-warn" />}
-              {opt ? <Check size={16} className="sb-check" /> : interactive && !lockedRound ? <CaretRight size={16} /> : null}
+              {built ? <Check size={16} className="sb-check" /> : interactive && !lockedRound ? <CaretRight size={16} /> : null}
             </span>
           </Tag>
         );

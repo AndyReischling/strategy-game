@@ -33,7 +33,8 @@ export async function checkLlm(): Promise<LlmStatus> {
 /** Compact, model-friendly description of a player's stack for the VC. */
 export function stackSummary(player: Player) {
   const region = REGION_BY_ID[player.regionId];
-  const opts = (Object.values(player.picks).filter(Boolean) as string[])
+  const opts = Object.values(player.picks)
+    .flatMap((arr) => arr ?? [])
     .map((id) => OPTION_BY_ID[id])
     .filter(Boolean);
   const sov = computeSovereignty(opts);

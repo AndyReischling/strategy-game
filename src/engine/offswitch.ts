@@ -17,22 +17,23 @@ export interface ExposedLayer {
 /** Which of a player's picks are exposed to the off-switch, accounting for deals/assets. */
 export function exposedLayers(player: Player): ExposedLayer[] {
   const out: ExposedLayer[] = [];
-  for (const [layer, optionId] of Object.entries(player.picks)) {
-    if (!optionId) continue;
-    const opt = OPTION_BY_ID[optionId];
-    if (!opt || opt.exposure === "none") continue;
+  for (const [layer, optionIds] of Object.entries(player.picks)) {
+    for (const optionId of optionIds ?? []) {
+      const opt = OPTION_BY_ID[optionId];
+      if (!opt || opt.exposure === "none") continue;
 
-    // OSS Commons is immune at L4 (the weights are already everywhere).
-    if (player.regionId === "oss-commons" && opt.layer === "weights") continue;
+      // OSS Commons is immune at L4 (the weights are already everywhere).
+      if (player.regionId === "oss-commons" && opt.layer === "weights") continue;
 
-    // Nvidia-direct is only exposed if you DON'T have a secured supply deal / ASML.
-    if (opt.exposure === "nvidia-no-deal") {
-      const secured =
-        player.unlocks.includes("supply-allocation") || player.assets.includes("asml-token");
-      if (secured) continue;
+      // Nvidia-direct is only exposed if you DON'T have a secured supply deal / ASML.
+      if (opt.exposure === "nvidia-no-deal") {
+        const secured =
+          player.unlocks.includes("supply-allocation") || player.assets.includes("asml-token");
+        if (secured) continue;
+      }
+
+      out.push({ layer: layer as LayerId, exposure: opt.exposure, optionId });
     }
-
-    out.push({ layer: layer as LayerId, exposure: opt.exposure, optionId });
   }
   return out;
 }

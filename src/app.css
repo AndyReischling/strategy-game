@@ -277,6 +277,8 @@ input[type="number"] { font-family: var(--font-mono); }
 .insp-body { display: flex; flex-direction: column; gap: 0.1rem; flex: 1; min-width: 0; }
 .insp-layer { opacity: 0.7; }
 .insp-opt { font-weight: 800; font-size: 0.95rem; }
+.insp-opt-line { display: flex; flex-direction: column; gap: 0.1rem; }
+.insp-opt-line + .insp-opt-line { margin-top: 0.35rem; padding-top: 0.35rem; border-top: 1px dotted var(--ink); }
 .insp-meta { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin-top: 0.15rem; }
 .insp-check { flex: none; color: var(--green); }
 .insp-deals { margin-top: 0.7rem; }

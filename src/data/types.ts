@@ -258,12 +258,13 @@ export interface Deal {
   lastActorId?: string; // who last proposed/countered (the other side must answer)
 }
 
+// Each layer can hold MORE THAN ONE option (e.g. chips from two providers).
 export interface StackPicks {
-  chips?: string;
-  compute?: string;
-  model?: string;
-  weights?: string;
-  hosting?: string;
+  chips?: string[];
+  compute?: string[];
+  model?: string[];
+  weights?: string[];
+  hosting?: string[];
 }
 
 export interface FragilityMark {
@@ -279,12 +280,14 @@ export interface Player {
   color: SpotColor;
   credits: number;
   picks: StackPicks;
-  /** what was actually paid per layer, so re-picks refund correctly */
-  paid: Partial<Record<LayerId, number>>;
-  /** layers locked at the end of a prior round — changing them costs a switching penalty */
+  /** what was paid per option (layer → optionId → cost), so undos refund correctly */
+  paid: Partial<Record<LayerId, Record<string, number>>>;
+  /** layers locked at the end of a prior round — their options are committed and can't be removed */
   lockedLayers: LayerId[];
-  /** the single layer this player built/changed this round (for the build action & UI); null = no build */
+  /** the layer this player built in this round (for the one-build-per-round rule & UI); null = no build */
   movedLayer: LayerId | null;
+  /** the specific option added this round — the only one that can be undone this round; null = none */
+  movedOption: string | null;
   /** the one action this player has spent this round — build a layer, or raise capital. null = unused.
    *  (Deals are free and never spend this — you can deal and still build the same round.) */
   actionThisRound: "build" | "capital" | null;

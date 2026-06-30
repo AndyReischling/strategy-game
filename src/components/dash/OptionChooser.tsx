@@ -41,7 +41,7 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
   const LIcon = LAYER_ICON[layer];
 
   // one action per round: locked unless you're refining the same layer you built this round
-  const moveLocked = !!me.actionThisRound && !(me.actionThisRound === "build" && me.movedLayer === layer);
+  const moveLocked = !!me.actionThisRound; // one build per round — once you've built (or pitched), no more this round
   const actedMsg =
     me.actionThisRound === "build"
       ? <>you built <b>{me.movedLayer ? LAYER_BY_ID[me.movedLayer].name : ""}</b></>
@@ -71,11 +71,9 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
         {layerDef.options.map((opt) => {
           const price = priceFor(opt, region, event);
           const check = canBuild(me, opt);
-          const isPicked = me.picks[opt.layer] === opt.id;
-          const refund = me.paid[opt.layer] ?? 0;
-          const penalty = me.lockedLayers.includes(opt.layer) && me.picks[opt.layer] !== opt.id ? 1 : 0;
-          const net = price.cost + penalty - refund;
-          const affordable = me.credits + refund >= price.cost + penalty;
+          const isPicked = (me.picks[opt.layer] ?? []).includes(opt.id);
+          const undoable = me.movedOption === opt.id; // only this round's addition can be removed
+          const affordable = me.credits >= price.cost;
           const blocked = !check.ok || price.frozen;
           return (
             <div key={opt.id} className={`opt-card ${isPicked ? "picked" : ""} ${blocked ? "blocked" : ""}`}>
@@ -160,10 +158,14 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
 
               <div className="oc-action">
                 {isPicked ? (
-                  <button className="btn btn-sm btn-danger" disabled={moveLocked} onClick={() => dispatch({ type: "clearPick", playerId, layer: opt.layer })}><X size={14} /> Remove</button>
+                  undoable ? (
+                    <button className="btn btn-sm btn-danger" onClick={() => dispatch({ type: "clearPick", playerId, layer: opt.layer, optionId: opt.id })}><X size={14} /> Undo</button>
+                  ) : (
+                    <button className="btn btn-sm btn-ghost" disabled><Check size={14} /> Built</button>
+                  )
                 ) : (
                   <button className="btn btn-sm btn-go" disabled={blocked || !affordable || moveLocked} onClick={() => buy(opt)}>
-                    {moveLocked ? "Move used" : affordable ? (<><Check size={14} /> Build {net > 0 ? credits(net) : ""}</>) : "Can't afford"}
+                    {moveLocked ? "Build used" : affordable ? (<><Check size={14} /> Build {credits(price.cost)}</>) : "Can't afford"}
                   </button>
                 )}
               </div>

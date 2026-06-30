@@ -99,7 +99,7 @@ export function canBuild(player: Player, option: LayerOption): BuildCheck {
       // The American incumbent will always rent you the closed API — that's the trap.
       return { ok: true };
     case "open-weights": {
-      const ownOpen = !!player.picks.weights && OPTION_BY_ID[player.picks.weights]?.tags.includes("open");
+      const ownOpen = (player.picks.weights ?? []).some((id) => OPTION_BY_ID[id]?.tags.includes("open"));
       if (ownOpen || unlocked) return { ok: true };
       return { ok: false, needs: NEEDS_LABEL[req], dealable: true };
     }

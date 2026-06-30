@@ -3,7 +3,8 @@ import { OPTION_BY_ID } from "../data/layers";
 import { CONFIG } from "../data/config";
 
 function pickedOptions(player: Player): LayerOption[] {
-  return (Object.values(player.picks).filter(Boolean) as string[])
+  return Object.values(player.picks)
+    .flatMap((arr) => arr ?? [])
     .map((id) => OPTION_BY_ID[id])
     .filter(Boolean);
 }
@@ -135,9 +136,10 @@ export function computeScore(
   const rawAdoption = picks.reduce((acc, o) => acc + o.adoption, 0);
 
   // Interdependence gate: a stack only reaches users as well as it is complete.
-  // Every empty layer caps the WHOLE stack, so balance beats grabbing the
-  // biggest individual numbers.
-  const builtLayers = picks.length;
+  // Reach is gated by how many of the five LAYERS are covered (extra options in
+  // a layer add capability, not reach), so every empty layer caps the WHOLE
+  // stack — balance beats grabbing the biggest individual numbers.
+  const builtLayers = new Set(picks.map((o) => o.layer)).size;
   const reach = builtLayers === 0
     ? 0
     : Math.min(1, Math.max(CONFIG.reach.floor, CONFIG.reach.perLayer * builtLayers));

@@ -65,30 +65,32 @@ export function InspectOverlay() {
         <div className="bs-title tiny upper muted">Their stack</div>
         <ul className="insp-stack">
           {STACK.map((l) => {
-            const optId = p.picks[l.id];
-            const opt = optId ? OPTION_BY_ID[optId] : undefined;
+            const opts = (p.picks[l.id] ?? []).map((id) => OPTION_BY_ID[id]).filter(Boolean);
+            const built = opts.length > 0;
             const Icon = LAYER_ICON[l.id];
             const isExp = exposed.has(l.id);
             return (
-              <li key={l.id} className={`insp-row ${opt ? "built" : "empty"} ${isExp ? "exposed" : ""}`}>
+              <li key={l.id} className={`insp-row ${built ? "built" : "empty"} ${isExp ? "exposed" : ""}`}>
                 <span className="insp-ico"><Icon size={20} /></span>
                 <span className="insp-body">
                   <span className="insp-layer tiny mono">{l.index} · <Term id={l.id}>{l.name}</Term></span>
-                  {opt ? (
-                    <>
-                      <span className="insp-opt">{opt.name}</span>
-                      <span className="insp-meta">
-                        <span className="meter adopt"><TrendUp size={12} /> <b>{opt.adoption > 0 ? `+${opt.adoption}` : opt.adoption}</b></span>
-                        <span className={`meter sov ${opt.sovereignty < 0 ? "neg" : ""}`}><ShieldCheck size={12} /> <b>{opt.sovereignty > 0 ? `+${opt.sovereignty}` : opt.sovereignty}</b></span>
-                        {opt.exposure !== "none" && <span className="chip-tag warn"><Warning size={11} /> exposed</span>}
-                        {opt.sanctionRisk && <span className="chip-tag warn"><Prohibit size={11} /> sanction</span>}
+                  {built ? (
+                    opts.map((opt) => (
+                      <span key={opt.id} className="insp-opt-line">
+                        <span className="insp-opt">{opt.name}</span>
+                        <span className="insp-meta">
+                          <span className="meter adopt"><TrendUp size={12} /> <b>{opt.adoption > 0 ? `+${opt.adoption}` : opt.adoption}</b></span>
+                          <span className={`meter sov ${opt.sovereignty < 0 ? "neg" : ""}`}><ShieldCheck size={12} /> <b>{opt.sovereignty > 0 ? `+${opt.sovereignty}` : opt.sovereignty}</b></span>
+                          {opt.exposure !== "none" && <span className="chip-tag warn"><Warning size={11} /> exposed</span>}
+                          {opt.sanctionRisk && <span className="chip-tag warn"><Prohibit size={11} /> sanction</span>}
+                        </span>
                       </span>
-                    </>
+                    ))
                   ) : (
                     <span className="insp-opt muted">— not built yet —</span>
                   )}
                 </span>
-                {opt && <Check size={16} className="insp-check" />}
+                {built && <Check size={16} className="insp-check" />}
               </li>
             );
           })}
