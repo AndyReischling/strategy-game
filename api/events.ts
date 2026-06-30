@@ -28,6 +28,7 @@ export default async function handler(req: Request): Promise<Response> {
     "For each card you're given, write a fresh NAME (<= 4 words), a one-sentence in-world FLAVOR line (evocative, the voice of a tightening geopolitical squeeze), and a plain EFFECT line. " +
     "Ground them in real, recent (2025-2026) developments — Nvidia/ASML/Mistral/export controls/energy/sovereign funds/open weights — using web search where useful. " +
     "CRITICAL: keep the mechanical meaning of the provided effectText EXACTLY the same (same costs, same who's affected); only rephrase it. " +
+    "Use PLAIN, SIMPLE language — short words, no jargon or acronyms, like explaining the news to a smart teenager. " +
     'Respond with ONLY minified JSON: an array of {"id":string,"name":string,"flavor":string,"effectText":string} for every card id given.';
 
   const user = `Cards:\n${cards.map((c) => `- ${c.id}: "${c.name}" — ${c.effectText}`).join("\n")}`;

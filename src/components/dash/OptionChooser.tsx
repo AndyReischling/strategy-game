@@ -11,16 +11,22 @@ import { credits } from "../util";
 import { LAYER_ICON, Warning, Prohibit, ArrowsClockwise, TrendUp, ShieldCheck, Check, X, ArrowRight } from "../icons";
 import type { LayerId, LayerOption } from "../../data/types";
 
+// Choice cards show a qualitative strength (pips), not the exact number — you
+// weigh the trade-offs without min-maxing a visible score. Exact values still
+// appear at the end of the round (inspect / score panel).
 function Meter({ value, kind }: { value: number; kind: "adopt" | "sov" }) {
   const neg = value < 0;
   const Icon = kind === "adopt" ? TrendUp : ShieldCheck;
   const label = kind === "adopt" ? "adoption" : "sovereignty";
+  // adoption spans ~0–6 (bucket by 2); sovereignty spans ~−2–3 (bucket by 1)
+  const level = value === 0 ? 0 : Math.min(3, Math.ceil(Math.abs(value) / (kind === "adopt" ? 2 : 1)));
+  const word = level === 0 ? "neutral" : level === 1 ? "low" : level === 2 ? "med" : "high";
   return (
     <Term id={kind === "adopt" ? "adoption" : "sovereignty"}>
-      <span className={`meter ${kind} ${neg ? "neg" : ""}`}>
+      <span className={`meter ${kind} ${neg ? "neg" : ""}`} aria-label={`${neg ? "negative " : ""}${label}: ${word}`}>
         <Icon size={13} />
-        <b>{value > 0 ? `+${value}` : value}</b>
-        <span className="meter-label">{label}</span>
+        <span className="meter-pips">{[0, 1, 2].map((i) => <span key={i} className={`mp ${i < level ? "on" : ""}`} />)}</span>
+        <span className="meter-label">{neg ? `−${label}` : label}</span>
       </span>
     </Term>
   );
@@ -76,7 +82,7 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
           const owned = me.qty[opt.layer]?.[opt.id] ?? 0;
           const isPicked = owned > 0;
           const undoable = me.movedOption === opt.id; // only this round's purchase can be undone
-          const q = Math.max(1, qtySel[opt.id] ?? 1);
+          const q = opt.countable ? Math.max(1, qtySel[opt.id] ?? 1) : 1;
           const buyCost = price.cost * q;
           const affordable = me.credits >= buyCost;
           const blocked = !check.ok || price.frozen;
@@ -162,12 +168,14 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
               {price.frozen && <div className="oc-need tiny warn-text">Frozen this round by the world event.</div>}
 
               <div className="oc-action">
-                {owned > 0 && <span className="oc-owned tiny mono" title="Units built">×{owned}</span>}
+                {owned > 0 && opt.countable && <span className="oc-owned tiny mono" title="Units built">×{owned}</span>}
                 {undoable ? (
                   <button className="btn btn-sm btn-danger" onClick={() => dispatch({ type: "clearPick", playerId, layer: opt.layer, optionId: opt.id })}><X size={14} /> Undo</button>
+                ) : owned > 0 && !opt.countable ? (
+                  <button className="btn btn-sm btn-ghost" disabled><Check size={14} /> Built</button>
                 ) : (
                   <>
-                    {!moveLocked && !blocked && (
+                    {opt.countable && !moveLocked && !blocked && (
                       <span className="qty-step" role="group" aria-label="Quantity">
                         <button type="button" className="qty-btn" disabled={q <= 1} onClick={() => setQtySel((s) => ({ ...s, [opt.id]: Math.max(1, q - 1) }))}>−</button>
                         <span className="qty-n tnum">{q}</span>
@@ -175,7 +183,9 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
                       </span>
                     )}
                     <button className="btn btn-sm btn-go" disabled={blocked || !affordable || moveLocked} onClick={() => buy(opt, q)}>
-                      {moveLocked ? "Build used" : !affordable ? "Can't afford" : (<><Check size={14} /> {owned > 0 ? "Add" : "Build"} ×{q} · {credits(buyCost)}</>)}
+                      {moveLocked ? "Build used" : !affordable ? "Can't afford"
+                        : opt.countable ? (<><Check size={14} /> {owned > 0 ? "Add" : "Build"} ×{q} · {credits(buyCost)}</>)
+                        : (<><Check size={14} /> Build · {credits(price.cost)}</>)}
                     </button>
                   </>
                 )}

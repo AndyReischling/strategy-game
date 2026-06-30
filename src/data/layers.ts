@@ -608,6 +608,15 @@ export const LAYERS: Layer[] = [
   },
 ];
 
+// Options you buy in discrete units (chips, datacenters) can be bought in
+// quantity; singular things (a model approach, a coalition, a license, a channel)
+// are one-and-done.
+const COUNTABLE_IDS = new Set([
+  "c-nvidia-direct", "c-nvidia-cloud", "c-chinese", "c-japan-korea", "c-sovereign-chips", "c-gray-market",
+  "co-nuclear", "co-renewable", "co-sovereign-cloud", "co-foreign-hyperscaler", "co-aws-sovereign", "co-eurohpc", "co-edge",
+]);
+for (const o of LAYERS.flatMap((l) => l.options)) o.countable = COUNTABLE_IDS.has(o.id);
+
 export const LAYER_BY_ID = Object.fromEntries(LAYERS.map((l) => [l.id, l]));
 
 export const OPTION_BY_ID: Record<string, LayerOption> = Object.fromEntries(

@@ -66,6 +66,17 @@ export function HowToPlay() {
           </div>
           <p className="tiny muted">Each round you take <b>one action</b> — build a layer, strike a deal, or pitch General Catalyst for capital — over {CONFIG.totalRounds} rounds.</p>
 
+          <p className="howto-mini-h mono upper tiny">Your moves each round (pick one)</p>
+          <p className="tiny muted" style={{ margin: "0 0 0.6rem" }}>
+            <b>Build</b> one layer (buy units of chips/datacenters, or pick a model/weights/hosting) · <b>Deal</b> with other players (free — doesn't use your build) · <b>Pitch</b> General Catalyst for cash (burns your turn if they pass).
+          </p>
+
+          <p className="howto-mini-h mono upper tiny">Your hand — and how to fill the gaps</p>
+          <p className="tiny muted" style={{ margin: "0 0 0.6rem", lineHeight: 1.5 }}>
+            The barometer shows what your region is <b>Strong</b> or <b>Short on</b>. You fill gaps by building, or by dealing for what you lack:
+            <br /><b>Chips / Compute</b> — buy units in Layers 1–2, or trade for spare units. <b>Talent</b> isn't a layer you buy — it makes building your <i>own</i> model cheaper, so if you're short on it, adapt an open model (fine-tune/localize) instead of training from scratch, or buy a model from a talent-rich partner (e.g. Canada). <b>Weights</b> — pick an open base you own (Layer 4) or get one granted. <b>Market</b> — reach users in Layer 5; short on it? deal for a market channel (Germany/India). <b>Capital</b> — pitch General Catalyst or take a backer (Gulf/Nordics).
+          </p>
+
           <div className="howto-rule card c-orange">
             <Power size={20} />
             <p><b>How you win:</b> score = users you reach × how well your stack fits together × how much you <i>own</i> it, plus good deals. Owned stacks survive the off-switch dice; rented ones get switched off. Build something you <b>own</b>, that people <b>use</b>, with <b>partners</b> you can count on.</p>

@@ -25,6 +25,7 @@ export default async function handler(req: Request): Promise<Response> {
     "Useful tags: nvidia, chinese, domestic-build, renewable, nuclear, rented, foreign, open, finetune, continued, model-build, consumer-app, enterprise, sovereign, owned. " +
     "Useful preconditions: supply-allocation, deal-compute, market-channel, high-power, renewable-power. " +
     "Keep amounts modest: surcharge/discount 1–6, deal-bonus 1–3, trust-hit 1–3, swf-stipend 10–40. Use 1–3 effects. Reflect WHO it hits based on the board (you may target tags or exempt regions via exemptRegionIds). " +
+    "Write the name, flavor and effectText in PLAIN, SIMPLE language anyone can understand — short words, no jargon or acronyms, like explaining the news to a smart teenager. The effectText must say in one clear sentence exactly what changes for players. " +
     'Respond with ONLY minified JSON: {"name":string(<=4 words),"flavor":string(one evocative sentence),"effectText":string(one plain sentence of the mechanical effect),"effects":[{"kind":string,"tags"?:string[],"amount"?:number,"preconditions"?:string[],"optionIds"?:string[],"exemptRegionIds"?:string[],"exemptTags"?:string[]}]}';
 
   const user = `Board:\n${JSON.stringify(board)}`;

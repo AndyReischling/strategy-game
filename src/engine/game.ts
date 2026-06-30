@@ -615,9 +615,12 @@ function setPick(table: TableState, player: Player, layer: LayerId, optionId: st
       ? "One build per round — you've already built this round. Add more next round."
       : "You've already raised capital this round — build next round.";
   }
-  const units = Math.max(1, Math.min(20, Math.round(qty)));
   const option = OPTION_BY_ID[optionId];
   if (!option || option.layer !== layer) return "Unknown option.";
+  // Singular options (a model, a coalition, a license) are one-and-done; only
+  // discrete units (chips, datacenters) can be bought in quantity.
+  const units = option.countable ? Math.max(1, Math.min(20, Math.round(qty))) : 1;
+  if (!option.countable && (player.picks[layer] ?? []).includes(optionId)) return null; // already have it
   const region = REGION_BY_ID[player.regionId];
   if (!region) return "Pick a region first.";
 

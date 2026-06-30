@@ -85,6 +85,8 @@ export interface LayerOption {
   tags: OptionTag[];
   /** Glossary term ids relevant to this option (for inline Term wrapping). */
   terms?: string[];
+  /** true = a discrete unit you can buy several of (chips, datacenters); false/undefined = singular (a model, a coalition, a license). */
+  countable?: boolean;
 }
 
 export interface Layer {

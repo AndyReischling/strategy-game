@@ -474,6 +474,10 @@ button.stack-block { cursor: pointer; }
 .oc-meta > .term { border-bottom: none; display: inline-flex; vertical-align: middle; }
 .meter, .chip-tag { cursor: help; }
 .meter-label { font-weight: 700; text-transform: lowercase; }
+.meter-pips { display: inline-flex; gap: 2px; align-items: center; }
+.meter-pips .mp { width: 0.42rem; height: 0.42rem; border-radius: 999px; border: 1.5px solid var(--ink); background: transparent; }
+.meter.adopt .mp.on { background: var(--ink); }
+.meter.sov .mp.on { background: var(--ink); }
 .meter { display: inline-flex; align-items: center; gap: 0.2rem; border: 2px solid var(--ink); border-radius: 999px; padding: 0.02rem 0.4rem; font-size: 0.72rem; }
 .meter.adopt { background: var(--yellow); }
 .meter.sov { background: var(--green); color: var(--cream); }

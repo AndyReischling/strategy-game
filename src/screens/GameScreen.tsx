@@ -17,7 +17,7 @@ import { IncomingDealModal } from "../components/panels/IncomingDealModal";
 import { LeaderboardPanel } from "../components/panels/LeaderboardPanel";
 import { FinalScreen } from "./FinalScreen";
 import { credits } from "../components/util";
-import { Hammer, Handshake, ChartBar, Trophy, Question, Coins, X } from "../components/icons";
+import { Hammer, Handshake, ChartBar, Trophy, Question, Scroll, Coins, X } from "../components/icons";
 import type { LayerId } from "../data/types";
 
 type Tab = "build" | "trade" | "score";
@@ -28,6 +28,7 @@ export function GameScreen() {
   const transport = useGame((s) => s.transport);
   const dispatch = useGame((s) => s.dispatch);
   const toggleGlossary = useGame((s) => s.toggleGlossary);
+  const toggleHowTo = useGame((s) => s.toggleHowTo);
   const toggleLeaderboard = useGame((s) => s.toggleLeaderboard);
   const showLeaderboard = useGame((s) => s.showLeaderboard);
   const leave = useGame((s) => s.leave);
@@ -104,8 +105,9 @@ export function GameScreen() {
             <span className="tnum">{credits(me.credits)}</span>
           </div>
         )}
+        <button className="btn btn-sm" onClick={() => toggleHowTo(true)}><Question size={15} /> How to play</button>
         <button className="btn btn-sm" onClick={() => toggleLeaderboard(true)}><Trophy size={15} /> Ranks</button>
-        <button className="btn btn-sm" onClick={() => toggleGlossary(true)}><Question size={15} /> Glossary</button>
+        <button className="btn btn-sm" onClick={() => toggleGlossary(true)}><Scroll size={15} /> Glossary</button>
         <button className="btn btn-sm btn-ghost" onClick={leave}><X size={15} /></button>
       </header>
 
