@@ -9,7 +9,19 @@ import { Term } from "../Term";
 import { GLOSSARY_BY_ID } from "../../data/glossary";
 import { credits } from "../util";
 import { LAYER_ICON, Warning, Prohibit, ArrowsClockwise, TrendUp, ShieldCheck, Check, X, ArrowRight } from "../icons";
-import type { LayerId, LayerOption } from "../../data/types";
+import type { LayerId, LayerOption, StrengthDim } from "../../data/types";
+
+// Which barometer strength each layer leans on, and what to do if you're short.
+const LAYER_STRENGTH: Record<LayerId, StrengthDim> = {
+  chips: "chips", compute: "compute", model: "talent", weights: "weights", hosting: "market",
+};
+const SHORT_HINT: Record<LayerId, string> = {
+  chips: "You're short on chips — buy from a partner or trade for spare units; building sovereign chips only pays off late.",
+  compute: "You're short on compute — rent or lease capacity, or deal for cluster access, rather than building a big domestic cluster.",
+  model: "You're short on talent — adapting an open model (fine-tune or localize) is far cheaper than training your own, or buy a model from a talent-rich partner like Canada.",
+  weights: "You're short here — pick an open base you own and keep (below), or have a partner grant you one.",
+  hosting: "You're short on market reach — deal for a market channel (Germany / India) to get your AI in front of users.",
+};
 
 // Choice cards show a qualitative strength (pips), not the exact number — you
 // weigh the trade-offs without min-maxing a visible score. Exact values still
@@ -68,6 +80,12 @@ export function OptionChooser({ layer }: { layer: LayerId }) {
           <div className="tiny">{layerDef.question} <span className="muted">· build the layers in any order you like</span></div>
         </div>
       </div>
+
+      {region && region.strengths[LAYER_STRENGTH[layer]] <= -1 && (
+        <div className="chooser-hint">
+          <Warning size={15} /> <span>{SHORT_HINT[layer]}</span>
+        </div>
+      )}
 
       {moveLocked && (
         <div className="move-lock">
