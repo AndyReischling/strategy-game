@@ -22,7 +22,7 @@ export default async function handler(req: Request): Promise<Response> {
     "A player pitches you in two sentences to raise capital. Judge them on the credibility and specificity of the pitch AND the strength/coherence/sovereignty of their actual stack (provided). " +
     "A sharp, specific, defensible pitch can win funding even for a middling stack; vague hype or an incoherent/over-exposed stack should be declined. " +
     "If funded, amount is an integer 10-40 (billions of US dollars; bigger for a stronger, more sovereign plan). " +
-    "Write a punchy 1-2 sentence in-character reaction that references something concrete from their pitch or stack. " +
+    "Write a punchy reaction (2-3 short sentences, max ~60 words) that references something concrete from their pitch or stack. Finish your thought — do not trail off mid-sentence. " +
     'Respond with ONLY minified JSON: {"funded":boolean,"amount":integer,"reason":string}';
 
   const user = `Player stack: ${JSON.stringify(stack)}\nTheir pitch: "${pitch}"`;
@@ -33,7 +33,7 @@ export default async function handler(req: Request): Promise<Response> {
     return json({
       funded: !!parsed.funded,
       amount: Math.max(0, Math.round(Number(parsed.amount) || 0)),
-      reason: String(parsed.reason ?? "").slice(0, 240),
+      reason: String(parsed.reason ?? "").slice(0, 500),
     });
   } catch (e) {
     return json({ error: String(e) }, 502);
